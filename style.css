@@ -51,7 +51,7 @@ body {
 }
 .player__holder {
   position: relative;
-  height: 380px;
+  height: 400px;
   -webkit-perspective: 500px;
           perspective: 500px;
 }
