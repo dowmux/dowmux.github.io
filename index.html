@@ -1,52 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CodePen - JS Music Player</title>
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css'>
+<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto:100,300'><link rel="stylesheet" href="./style.css">
+
+</head>
 <body>
-  <textarea style="text-align:left; width:340px;height:1050px;border:none;resize:none;">
-Trandance [Tiesto & Dj Licious - Club Life 605 (02-11-2018)]
-
-Tiësto played: 
-01 JLV - Something Good [HEXAGON]
-02 Chris Lake ft. Alexis Roberts - Turn Off The Lights [BLACK BOOK]
-03 Moska ft. Brooke Evers - Dance [MUSICAL FREEDOM]
-
-Hot From The Studio 
-04 BROHUG - Be Somebody [MUSICAL FREEDOM]
-
-Request Of The Week 
-05 Robyn - Dancing On My Own (Disfunktion Bootleg) [KONICHIWA]
-06 Funkin Matt - Epoch [ARMADA TRICE]
-07 Oliver Heldens ft. Shungudzo - Fire In My Soul [RCA (SONY)]
-08 Brookes Brothers - Every Minute (Stephen Murphy Remix) [DRUM&BASSARENA]
-09 HI-LO & Mike Cervello - Impulse [HELDEEP]
-
-Hot From The Studio 
-10 Florian Picasso - The Answer [MUSICAL FREEDOM]
-11 Martin Garrix & Pierce Fulton ft. Mike Shinoda - Waiting For Tomorrow [STMPD]
-12 The Chainsmokers & Aazar - Siren [COLUMBIA (SONY)]
-13 Man Cub - Breathe Again [ENHANCED]
-
-DJ Licious played: 
-14 Riton & Kah-Lo - Up & Down [RITONTIME]
-15 Dom Dolla - Take It [SWEAT IT OUT!]
-16 DJ Licious - I Can't Stop [HEXAGON]
-17 DJ Licious - I'll Be Alright [HEXAGON]
-18 Jax Jones & Mabel ft. Rich The Kid - Ring Ring (DJ Licious Remix) [POLYDOR]
-
-Tiësto played: 
-19 Nora En Pure - Polynesia [ENORMOUS TUNES]
-20 Hanne Mjøen - Sounds Good To Me (Paul Woolford Remix) [SPINNIN' DEEP]
-21 Juloboy - You Are Mine [ENORMOUS CHILLS]
-22 Malaa - We Get Crunk [CONFESSION]
-23 Tinlicker ft. Thomas Oliver - Nothing Without You (Tinlicker Rework) [ANJUNADEEP]
-24 Hagen Feetly - U Got Me [KONTOR]
-25 Kyle Watson - Moments [BIG BEAT (ATLANTIC)]
-26 Guy Gerber - What To Do (&ME Remix) [RUMORS]
-27 Osunlade - Envision (Âme Remix) [INNERVISIONS]
-28 David Hôhme - Without Doubt (Rodriguez Jr. Remix) [DESERT HEARTS]
-29 Enrico Sangiuliano - Astral Projection [DRUMCODE]
-30 ID - ID
-31 Tom Walker - Angels (M-22 Remix) [RELENTLESS]
-  </textarea>
+<!-- partial:index.partial.html -->
+<div class="player">
+  <div class="player__wrapper">
+    <div class="player__holder">
+      <div class="player__cover"></div>
+      <div class="player__list tracks">
+        <ul class="tracks__list"></ul>
+      </div>
+    </div>
+    <div class="player__options options">
+      <button class="btn options__btn options__btn--random">
+						<i class="fa fa-random"></i>
+					</button>
+      <button class="btn options__btn options__btn--playlist">
+						<i class="fa fa-bars"></i>
+					</button>
+    </div>
+  </div>
+  <div class="player__info">
+    <h1 class="player__title"></h1>
+    <h2 class="player__artist"></h2>
+  </div>
+  <div class="player__progressbar-holder">
+    <div class="player__progressbar"></div>
+  </div>
+  <div class="player__controls controls">
+    <button class="btn controls__btn controls__btn--prev">
+					<i class="fa fa-backward"></i>
+				</button>
+    <button class="btn controls__btn controls__btn--play-pause">
+					 <i class="fa fa-fw fa-play"></i>
+				</button>
+    <button class="btn controls__btn controls__btn--next">
+					<i class="fa fa-forward"></i>
+				</button>
+  </div>
+</div>
+<!-- partial -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script><script  src="./script.js"></script>
 
 </body>
 </html>
