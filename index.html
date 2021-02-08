@@ -1,29 +1,85 @@
 <!DOCTYPE html>
-<html lang="en" >
-<head>
-  <meta charset="UTF-8">
-  <title>CodePen - Easy scroll carousel with animation</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
-      <link href="https://fonts.googleapis.com/css?family=Lato:400,400i" rel="stylesheet">
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-<link rel="stylesheet" href="./style.css">
-
-</head>
+<html>
 <body>
-<!-- partial:index.partial.html -->
-<div class="slide1 slide">
-<iframe src="http://soradio.ru/ind.html" width="420" height="600" frameborder="0" resize="0" scrolling="no" style="z-index:2;"></iframe>
-</div>
-<div class="slide2 slide">
-<iframe src="http://soradio.ru/ind.html" width="420" height="600" frameborder="0" resize="0" scrolling="no" style="z-index:2;"></iframe>
-</div>
-<div class="controls">
-  <div class="left"></div>
-  <div class="right"></div>
-</div>
-<!-- partial -->
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js'></script><script  src="./script.js"></script>
+    <h1>Служба технической поддержки ООО "Технолоджи"</h1>
+<form id="form">
+  <div class="field">
+    <label for="userMail">Адрес Email:</label>
+    <input type="text" name="userMail" id="userMail">
+  </div>
+  <div class="field">
+    <label for="telephoneNumber">Номер телефона:</label>
+    <input type="text" name="telephoneNumber" id="telephoneNumber">
+  </div>
+  <div class="field">
+    <label for="userAddress">Домашний адрес:</label>
+    <input type="text" name="userAddress" id="userAddress">
+  </div>
+  <div class="field">
+    <label for="userReason">Текст заявки:</label>
+    <input type="text" name="userReason" id="userReason">
+  </div>
 
-</body>
+  <input type="submit" id="button" value="Отправить заявку" >
+</form>
+<style>
+    body
+    {
+        background-image: url("https://dit.urfu.ru/fileadmin/user_upload/site_15560/blog/atendimento.jpg");
+    }
+.field {
+  margin-bottom: 10px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  color: #000;
+}
+
+.field input {
+  display: block;
+  min-width: 250px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+input[type="submit"] {
+  display: block;
+  padding: 6px 30px;
+  font-size: 14px;
+  background-color: #4460AA;
+  color: #fff;
+  border: none
+}
+</style>
+    </body>
+    <script type="text/javascript"
+  src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
+
+<script type="text/javascript">
+  emailjs.init('user_jo97NVDpcio0olOyL8oV3')
+</script> 
+<script>
+const btn = document.getElementById('button');
+
+document.getElementById('form')
+ .addEventListener('submit', function(event) {
+   event.preventDefault();
+
+   btn.value = 'Sending...';
+
+   const serviceID = 'default_service';
+   const templateID = 'template_3ar9ets';
+
+   emailjs.sendForm(serviceID, templateID, this)
+    .then(() => {
+      btn.value = 'Send Email';
+      alert('Sent!');
+    }, (err) => {
+      btn.value = 'Send Email';
+      alert(JSON.stringify(err));
+    });
+});
+    </script>
 </html>
