@@ -1,6 +1,5 @@
 // player.js
 import { albumDatabase } from './db.js';
-import { setupAudioContext } from './visualizer.js';
 
 export const audio = document.getElementById('audio-element');
 const playerView = document.querySelector('.player-view');
