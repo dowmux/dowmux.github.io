@@ -121,48 +121,40 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
 }
 
 // Надежный парсер CUE разметки, защищенный от регулярных ошибок
+// player.js
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
-    let globalPerformer = 'Unknown Performer'; // На случай, если PERFORMER указан один раз в начале файла
+    let albumPerformer = "Unknown Artist"; // Переменная для хранения главного артиста альбома
     state.tracks = [];
 
     lines.forEach(line => {
         const trimmed = line.trim();
         
-        // Ищем исполнителя (может быть как глобальным, так и внутри TRACK)
-        if (trimmed.startsWith('PERFORMER')) {
-            const performerMatch = trimmed.match(/"([^"]+)"/);
-            if (performerMatch) {
-                if (currentTrack) {
-                    currentTrack.performer = performerMatch[1];
-                } else {
-                    globalPerformer = performerMatch[1]; // Запоминаем глобального исполнителя для всего диска
-                }
-            }
-        }
+        // Находим главного исполнителя альбома (пишется до ключевого слова TRACK)
+        if (trimmed.startsWith('PERFORMER') && !currentTrack) {
+            const albumPerfMatch = trimmed.match(/"([^"]+)"/);
+            if (albumPerfMatch) albumPerformer = albumPerfMatch[1];
+        } 
         else if (trimmed.startsWith('TRACK')) {
-            // Перед переходом к новому треку, сохраняем предыдущий и собираем его имя
-            if (currentTrack) {
-                const trackPerformer = currentTrack.performer || globalPerformer;
-                currentTrack.title = `${trackPerformer} - ${currentTrack.rawTitle}`;
-                state.tracks.push(currentTrack);
-            }
-            
+            if (currentTrack) state.tracks.push(currentTrack);
             const parts = trimmed.split(/\s+/);
             const trackNum = parts[1] || (state.tracks.length + 1).toString().padStart(2, '0');
-            
-            // Создаем объект трека (храним временное название в rawTitle)
+            // По умолчанию даем треку главного исполнителя альбома
             currentTrack = { 
                 indexStr: trackNum, 
-                rawTitle: 'Unknown Track', 
-                performer: null, 
+                performer: albumPerformer, 
+                title: 'Unknown Track', 
                 startTime: 0, 
                 endTime: Infinity 
             };
+        } else if (trimmed.startsWith('PERFORMER') && currentTrack) {
+            // Если у конкретного трека свой исполнитель (например, feat.)
+            const trackPerfMatch = trimmed.match(/"([^"]+)"/);
+            if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1];
         } else if (trimmed.startsWith('TITLE') && currentTrack) {
             const titleMatch = trimmed.match(/"([^"]+)"/);
-            if (titleMatch) currentTrack.rawTitle = titleMatch[1];
+            if (titleMatch) currentTrack.title = titleMatch[1];
         } else if (trimmed.startsWith('INDEX 01') && currentTrack) {
             const timeMatch = trimmed.match(/(\d+):(\d+):(\d+)/);
             if (timeMatch) {
@@ -172,13 +164,17 @@ function parseCue(cueText) {
             }
         }
     });
+    if (currentTrack) state.tracks.push(currentTrack);
 
-    // Не забываем сохранить самый последний трек после выхода из цикла
-    if (currentTrack) {
-        const trackPerformer = currentTrack.performer || globalPerformer;
-        currentTrack.title = `${trackPerformer} - ${currentTrack.rawTitle}`;
-        state.tracks.push(currentTrack);
+    // Расчет времени окончания треков
+    for (let i = 0; i < state.tracks.length; i++) {
+        if (i < state.tracks.length - 1) {
+            state.tracks[i].endTime = state.tracks[i + 1].startTime;
+        } else {
+            state.tracks[i].endTime = audio.duration || Infinity;
+        }
     }
+    renderPlaylist();
 }
 
     if (currentTrack) state.tracks.push(currentTrack);
