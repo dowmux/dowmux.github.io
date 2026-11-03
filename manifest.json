@@ -1,0 +1,21 @@
+{
+  "short_name": "CUE Player",
+  "name": "Apple Music Inspired CUE Player",
+  "icons": [
+    {
+      "src": "https://picsum.photos",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://picsum.photos",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "index.html",
+  "background_color": "#050505",
+  "theme_color": "#ff2d55",
+  "display": "standalone",
+  "orientation": "portrait"
+}
