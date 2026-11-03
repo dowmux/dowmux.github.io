@@ -9,10 +9,10 @@ export const albumDatabase = [
     },
     {
         id: "album-2",
-        performer: "Benny Benassi",
-        albumName: "Benny Benassi - BB Podcast #102",
-        imageUrl: "https://cdn-images.dzcdn.net/images/artist/74a381f2d9dc13e743ef13b41e67f7ba/1900x1900-000000-80-0-0.jpg",
-        musicUrl: "https://promodj.com/prelisten/7982071/Benny_Benassi_BB_Podcast_102.mp3?hq=1&podcast=1",
+        performer: "Oliver Heldens",
+        albumName: "Heldeep Radio #643",
+        imageUrl: "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/17/5b/de/175bdeb3-74a0-836e-6118-4310eef22fe4/mza_1279829827300431381.jpg/400x400bb.webp",
+        musicUrl: "HeldeepRadio.aac",
         cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
     },
     {
