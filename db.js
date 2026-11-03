@@ -5,7 +5,7 @@ export const albumDatabase = [
         albumName: "Above & Beyond - Group Therapy 701",
         imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGjoW5q096B5IRX8o33sHrkGTkf5QguVxcDr5bRROpM1D_WHHErmXE4cfY&s=10",
         musicUrl: "https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1",
-        cueUrl: "tracks/chill_beats.cue" // Путь к вашему локальному или внешнему .cue файлу
+        cueUrl: "group therapy.cue" // Путь к вашему локальному или внешнему .cue файлу
     },
     {
         id: "album-2",
