@@ -1,6 +1,5 @@
 // player.js
 import { albumDatabase } from './db.js';
-import { setupAudioContext } from './visualizer.js';
 
 export const audio = document.getElementById('audio-element');
 const playerView = document.querySelector('.player-view');
@@ -104,7 +103,7 @@ export function setPausedState() {
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 10 * 60; // 600 секунд
+    const segmentDuration = 5 * 60; // 600 секунд
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
