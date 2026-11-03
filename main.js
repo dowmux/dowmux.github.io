@@ -1,7 +1,6 @@
 // main.js
 import { albumDatabase } from './db.js';
 import { audio, state, loadRelease, selectTrack, startPlayback, setPausedState, updateActiveTrackVisual, updateTrackDisplay, formatTime, getActiveTracks } from './player.js';
-import { setupAudioContext } from './visualizer.js';
 
 const playBtn = document.getElementById('play-btn');
 const prevBtn = document.getElementById('prev-btn');
@@ -11,6 +10,7 @@ const progressContainer = document.getElementById('progress-container');
 const progressBar = document.getElementById('progress-bar');
 const releasesGrid = document.getElementById('releases-grid');
 const trackListElement = document.getElementById('track-list');
+const volumeSlider = document.getElementById('volume-slider');
 
 function init() {
     releasesGrid.innerHTML = '';
@@ -28,7 +28,7 @@ function init() {
 
 function setupEvents() {
     playBtn.addEventListener('click', () => {
-        setupAudioContext(audio);
+        // Вызовы визуализатора полностью вычищены
         if (audio.paused) startPlayback();
         else { audio.pause(); setPausedState(); }
     });
@@ -63,6 +63,11 @@ function setupEvents() {
         if (duration) audio.currentTime = (e.offsetX / progressContainer.clientWidth) * duration;
     });
 
+    volumeSlider.addEventListener('input', (e) => {
+        audio.volume = e.target.value;
+    });
+    audio.volume = volumeSlider.value;
+
     audio.addEventListener('loadedmetadata', () => {
         const currentTracks = getActiveTracks();
         if (currentTracks.length > 0) currentTracks[currentTracks.length - 1].endTime = audio.duration;
@@ -71,11 +76,10 @@ function setupEvents() {
     audio.addEventListener('timeupdate', () => {
         const currentTime = audio.currentTime;
         const duration = audio.duration || 0;
-        const currentTracks = getActiveTracks(); // Получаем СВЕЖИЙ массив треков
+        const currentTracks = getActiveTracks();
         
         if (!currentTracks || currentTracks.length === 0) return;
 
-        // Поиск активного трека по текущей секунде
         const actualTrackIndex = currentTracks.findIndex(t => currentTime >= t.startTime && currentTime < t.endTime);
         
         if (actualTrackIndex !== -1 && actualTrackIndex !== state.currentTrackIndex) {
