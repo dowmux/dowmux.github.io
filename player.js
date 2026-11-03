@@ -121,23 +121,41 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
 }
 
 // Надежный парсер CUE разметки, защищенный от регулярных ошибок
+// player.js
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
+    let albumPerformer = "Unknown Artist"; // Переменная для хранения главного артиста альбома
     state.tracks = [];
 
     lines.forEach(line => {
         const trimmed = line.trim();
-        if (trimmed.startsWith('TRACK')) {
+        
+        // Находим главного исполнителя альбома (пишется до ключевого слова TRACK)
+        if (trimmed.startsWith('PERFORMER') && !currentTrack) {
+            const albumPerfMatch = trimmed.match(/"([^"]+)"/);
+            if (albumPerfMatch) albumPerformer = albumPerfMatch[1];
+        } 
+        else if (trimmed.startsWith('TRACK')) {
             if (currentTrack) state.tracks.push(currentTrack);
             const parts = trimmed.split(/\s+/);
             const trackNum = parts[1] || (state.tracks.length + 1).toString().padStart(2, '0');
-            currentTrack = { indexStr: trackNum, title: 'Unknown Track', startTime: 0, endTime: Infinity };
+            // По умолчанию даем треку главного исполнителя альбома
+            currentTrack = { 
+                indexStr: trackNum, 
+                performer: albumPerformer, 
+                title: 'Unknown Track', 
+                startTime: 0, 
+                endTime: Infinity 
+            };
+        } else if (trimmed.startsWith('PERFORMER') && currentTrack) {
+            // Если у конкретного трека свой исполнитель (например, feat.)
+            const trackPerfMatch = trimmed.match(/"([^"]+)"/);
+            if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1];
         } else if (trimmed.startsWith('TITLE') && currentTrack) {
             const titleMatch = trimmed.match(/"([^"]+)"/);
             if (titleMatch) currentTrack.title = titleMatch[1];
         } else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            // Безопасный поиск временной метки MM:SS:FF
             const timeMatch = trimmed.match(/(\d+):(\d+):(\d+)/);
             if (timeMatch) {
                 const minutes = parseInt(timeMatch[1], 10) || 0;
@@ -148,7 +166,7 @@ function parseCue(cueText) {
     });
     if (currentTrack) state.tracks.push(currentTrack);
 
-    // Точный расчет интервалов окончания каждого трека
+    // Расчет времени окончания треков
     for (let i = 0; i < state.tracks.length; i++) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
@@ -159,14 +177,18 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
+
+// player.js
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
         const li = document.createElement('li');
         li.setAttribute('data-index', index);
+        
+        // Выводим полный формат "Исполнитель – Название" и в список
         li.innerHTML = `
             <div class="track-meta">
-                <span>${track.indexStr}. ${track.title}</span>
+                <span>${track.indexStr}. ${track.performer} – ${track.title}</span>
                 <span>${formatTime(track.startTime)}</span>
             </div>
             <div class="track-mini-progress"></div>
@@ -205,26 +227,32 @@ export function updateActiveTrackVisual() {
     }
 }
 
+// player.js
 export function updateTrackDisplay() {
     if (state.tracks[state.currentTrackIndex]) {
         const currentTrack = state.tracks[state.currentTrackIndex];
-        const text = `${currentTrack.indexStr}. ${currentTrack.title}`;
         
+        // ФОРМАТ: Номер. Исполнитель – Название
+        const fullTrackName = `${currentTrack.indexStr}. ${currentTrack.performer} – ${currentTrack.title}`;
+        
+        // Обновляем бегущую строку на экране плеера
         currentTrackTitleDrive.style.animation = 'none';
         currentTrackTitleDrive.offsetHeight; 
-        currentTrackTitleDrive.innerText = text;
+        currentTrackTitleDrive.innerText = fullTrackName;
         currentTrackTitleDrive.style.animation = 'appleMarquee 14s linear infinite';
 
+        // Передаем этот же красивый формат на экран магнитолы автомобиля
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: currentTrack.title,
-                artist: document.getElementById('release-performer').innerText,
+                artist: currentTrack.performer, // Отдельно имя артиста для магнитолы
                 album: document.getElementById('release-title').innerText,
                 artwork: [{ src: albumDatabase[state.activeAlbumIndex].imageUrl, sizes: '512x512', type: 'image/png' }]
             });
         }
     }
 }
+
 
 // Конвертация секунд в MM:SS
 export function formatTime(secs) {
