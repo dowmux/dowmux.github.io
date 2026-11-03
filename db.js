@@ -46,13 +46,5 @@ export const albumDatabase = [
         imageUrl: "http://trancecentury.com/wp-content/uploads/2020/09/arminvanbuuren.jpg",
         musicUrl: "https://cs9-1v4.vkuseraudio.net/s/v1/acmp/3F-sYt7X3TlwMB1ozFniPWvN6FBDvkaldyEaVZtXixpJeyov8cxAsbiG2WUwdYpt8p8JFZGHveux4Z0t87llpFJ9MABAdLAiPmUYRYanqOHCD3sLFMVKeOVY0yoEFVHef_w8aiZ5HJTvjAaFBDwdADEULueI-afuy4MhBl04exprDB3YjC8r.mp3?siren=1",
         cueUrl: "asot1301.cue" // Путь к другому .cue файлу
-    },
-    {
-        id: "album-7",
-        performer: "Steve Allen",
-        albumName: "Steve Allen – Uplift Radio 291",
-        imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNeSKbQYHwOyKEy-XddIbtwMkTy1M5Ngt6Qw635GtdQ56rEY9ZuPB7U4w&s=10",
-        musicUrl: "https://cs9-1v4.vkuseraudio.net/s/v1/acmp/_evg5H6qM1voZjfh3_30F8A_n-OMSkiW4JcEA5o6JV2-kZmwVOA2BO_izt5tnfFhx8LRd9cRfDykDNbW9nWYbBXLTVm5muGL3z1tb9FA0zbqMhLYkW9gfY4x2gtl9zilvODqqTFPBHS11Tv2E1TTOi8UzLvhQD_MQjcFxLoZgQ1OVDq2tnxL.mp3?siren=1",
-        cueUrl: "uplift.cue" // Путь к другому .cue файлу
     }
 ];
