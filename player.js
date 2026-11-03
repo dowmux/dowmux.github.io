@@ -124,20 +124,46 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
+    let globalPerformer = 'Unknown Performer'; // На случай, если PERFORMER указан один раз в начале файла
     state.tracks = [];
 
     lines.forEach(line => {
         const trimmed = line.trim();
-        if (trimmed.startsWith('TRACK')) {
-            if (currentTrack) state.tracks.push(currentTrack);
+        
+        // Ищем исполнителя (может быть как глобальным, так и внутри TRACK)
+        if (trimmed.startsWith('PERFORMER')) {
+            const performerMatch = trimmed.match(/"([^"]+)"/);
+            if (performerMatch) {
+                if (currentTrack) {
+                    currentTrack.performer = performerMatch[1];
+                } else {
+                    globalPerformer = performerMatch[1]; // Запоминаем глобального исполнителя для всего диска
+                }
+            }
+        }
+        else if (trimmed.startsWith('TRACK')) {
+            // Перед переходом к новому треку, сохраняем предыдущий и собираем его имя
+            if (currentTrack) {
+                const trackPerformer = currentTrack.performer || globalPerformer;
+                currentTrack.title = `${trackPerformer} - ${currentTrack.rawTitle}`;
+                state.tracks.push(currentTrack);
+            }
+            
             const parts = trimmed.split(/\s+/);
             const trackNum = parts[1] || (state.tracks.length + 1).toString().padStart(2, '0');
-            currentTrack = { indexStr: trackNum, title: 'Unknown Track', startTime: 0, endTime: Infinity };
+            
+            // Создаем объект трека (храним временное название в rawTitle)
+            currentTrack = { 
+                indexStr: trackNum, 
+                rawTitle: 'Unknown Track', 
+                performer: null, 
+                startTime: 0, 
+                endTime: Infinity 
+            };
         } else if (trimmed.startsWith('TITLE') && currentTrack) {
             const titleMatch = trimmed.match(/"([^"]+)"/);
-            if (titleMatch) currentTrack.title = titleMatch[1];
+            if (titleMatch) currentTrack.rawTitle = titleMatch[1];
         } else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            // Безопасный поиск временной метки MM:SS:FF
             const timeMatch = trimmed.match(/(\d+):(\d+):(\d+)/);
             if (timeMatch) {
                 const minutes = parseInt(timeMatch[1], 10) || 0;
@@ -146,6 +172,15 @@ function parseCue(cueText) {
             }
         }
     });
+
+    // Не забываем сохранить самый последний трек после выхода из цикла
+    if (currentTrack) {
+        const trackPerformer = currentTrack.performer || globalPerformer;
+        currentTrack.title = `${trackPerformer} - ${currentTrack.rawTitle}`;
+        state.tracks.push(currentTrack);
+    }
+}
+
     if (currentTrack) state.tracks.push(currentTrack);
 
     // Точный расчет интервалов окончания каждого трека
