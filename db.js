@@ -19,7 +19,7 @@ export const albumDatabase = [
         id: "album-3",
         performer: "Anjunachill",
         albumName: "Anjunachill - Anjunachill On Air 17",
-        imageUrl: "https://cdn.1001tracklists.com/images/artworks/sources/6/7/a/7/161207-artwork-the-anjunadeep-edition-5848458523e77-Medium.jpg",
+        imageUrl: "https://i.discogs.com/Xbg4GsqCyNc1kA-yHLqa35vi1UT9kTbB-71lasCqak8/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9MLTM5NzUw/MzAtMTczNjk1ODkx/My01ODE0LmpwZWc.jpeg",
         musicUrl: "https://promodj.com/prelisten/7989966/Anjunachill_Anjunachill_On_Air_17_with_No_Solange_17.mp3?hq=1&podcast=1",
         cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
     },
