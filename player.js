@@ -269,8 +269,3 @@ export function formatTime(secs) {
     return `${m}:${s}`;
 }
 
-// Добавьте это в самый конец файла player.js
-export function getActiveTracks() {
-    return state.tracks;
-}
-
