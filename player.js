@@ -50,7 +50,7 @@ export function loadRelease(index, shouldPlay = true) {
             .catch(() => {
                 // Попытка 2: Загрузка через CORS-прокси при блокировке браузером
                 fetch(`https://allorigins.win{encodeURIComponent(targetUrl)}`)
-                    .then(res => res.json())
+                    .then(res => { if (!res.ok) throw new Error(); return res.json(); })
                     .then(data => processCue(data.contents || '', shouldPlay))
                     .catch(() => {
                         console.warn("Файл .cue недоступен. Включается автоматическая нарезка.");
@@ -86,7 +86,7 @@ function fallbackToAutoSplit(shouldPlay) {
 }
 
 export function startPlayback() {
-    setupAudioContext(audio);
+    // ВСЯ ВИЗУАЛИЗАЦИЯ И АУДИОКОНТЕКСТ УДАЛЕНЫ. Запускается чистый стандартный звук.
     audio.play().then(() => {
         playIcon.innerText = "⏸";
         playerView.classList.remove('paused');
@@ -103,7 +103,7 @@ export function setPausedState() {
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 5 * 60; // 600 секунд
+    const segmentDuration = 10 * 60; // 600 секунд
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
@@ -128,7 +128,7 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
     else updateTrackDisplay();
 }
 
-// Парсер .cue разметки (ИСПРАВЛЕНО ИЗВЛЕЧЕНИЕ СТРОК ЧЕРЕЗ ИНДЕКС)
+// Парсер .cue разметки
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
@@ -138,12 +138,10 @@ function parseCue(cueText) {
     lines.forEach(line => {
         const trimmed = line.trim();
         
-        // Поиск общего исполнителя
         if (trimmed.startsWith('PERFORMER') && !currentTrack) {
             const albumPerfMatch = trimmed.match(/"([^"]+)"/);
-            if (albumPerfMatch) albumPerformer = albumPerfMatch[1]; // Фикс: берем [1]
+            if (albumPerfMatch) albumPerformer = albumPerfMatch[1];
         } 
-        // Создание объекта трека
         else if (trimmed.startsWith('TRACK')) {
             if (currentTrack) state.tracks.push(currentTrack);
             const parts = trimmed.split(/\s+/);
@@ -151,23 +149,20 @@ function parseCue(cueText) {
             
             currentTrack = { 
                 indexStr: trackNum, 
-                performer: albumPerformer, // Наследует главного артиста
+                performer: albumPerformer, 
                 title: 'Unknown Track', 
                 startTime: 0, 
                 endTime: Infinity 
             };
         } 
-        // Локальный исполнитель трека (если есть feat. / guest)
         else if (trimmed.startsWith('PERFORMER') && currentTrack) {
             const trackPerfMatch = trimmed.match(/"([^"]+)"/);
-            if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1]; // Фикс: берем [1]
+            if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1];
         } 
-        // Название трека
         else if (trimmed.startsWith('TITLE') && currentTrack) {
             const titleMatch = trimmed.match(/"([^"]+)"/);
-            if (titleMatch) currentTrack.title = titleMatch[1]; // Фикс: берем [1]
+            if (titleMatch) currentTrack.title = titleMatch[1];
         } 
-        // Временная метка
         else if (trimmed.startsWith('INDEX 01') && currentTrack) {
             const timeMatch = trimmed.match(/(\d+):(\d+):(\d+)/);
             if (timeMatch) {
@@ -179,7 +174,6 @@ function parseCue(cueText) {
     });
     if (currentTrack) state.tracks.push(currentTrack);
 
-    // Расчет времени окончания треков
     for (let i = 0; i < state.tracks.length; i++) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
@@ -190,7 +184,7 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
-// Отрисовка элементов плейлиста (ИСПРАВЛЕНО НА ВЫВОД: Performer – Title)
+// Отрисовка элементов плейлиста (Формат: Performer – Title)
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
@@ -237,7 +231,7 @@ export function updateActiveTrackVisual() {
     }
 }
 
-// Синхронизация бегущей строки (ИСПРАВЛЕНО НА ВЫВОД: Performer – Title)
+// Синхронизация бегущей строки (Формат: Performer – Title)
 export function updateTrackDisplay() {
     if (state.tracks[state.currentTrackIndex]) {
         const currentTrack = state.tracks[state.currentTrackIndex];
