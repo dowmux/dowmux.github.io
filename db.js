@@ -45,6 +45,6 @@ export const albumDatabase = [
         albumName: "Armin van Buuren – A State Of Trance 1301 (UNFILTERED #009)",
         imageUrl: "http://trancecentury.com/wp-content/uploads/2020/09/arminvanbuuren.jpg",
         musicUrl: "https://cs9-1v4.vkuseraudio.net/s/v1/acmp/3F-sYt7X3TlwMB1ozFniPWvN6FBDvkaldyEaVZtXixpJeyov8cxAsbiG2WUwdYpt8p8JFZGHveux4Z0t87llpFJ9MABAdLAiPmUYRYanqOHCD3sLFMVKeOVY0yoEFVHef_w8aiZ5HJTvjAaFBDwdADEULueI-afuy4MhBl04exprDB3YjC8r.mp3?siren=1",
-        cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
+        cueUrl: "asot1301.cue" // Путь к другому .cue файлу
     }
 ];
