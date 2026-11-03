@@ -15,12 +15,20 @@ export let state = {
     activeAlbumIndex: 0
 };
 
-// Загрузка релиза
+// Функция-геттер для передачи свежего массива в main.js
+export function getActiveTracks() {
+    return state.tracks;
+}
+
+// Загрузка выбранного релиза
 export function loadRelease(index, shouldPlay = true) {
     state.activeAlbumIndex = index;
     const album = albumDatabase[index];
 
+    // Подсветка активной карточки в медиатеке
     document.querySelectorAll('.release-card').forEach((c, i) => c.classList.toggle('active', i === index));
+    
+    // Обновление интерфейса данными релиза
     document.getElementById('release-cover').src = album.imageUrl;
     document.getElementById('bg-blur-image').src = album.imageUrl;
     document.getElementById('release-performer').innerText = album.performer;
@@ -36,17 +44,17 @@ export function loadRelease(index, shouldPlay = true) {
     if (album.cueUrl && album.cueUrl.trim() !== "") {
         const targetUrl = encodeURI(album.cueUrl);
         
-        // Попытка 1: Прямой запрос
+        // Попытка 1: Прямая загрузка .cue
         fetch(targetUrl)
             .then(res => { if (!res.ok) throw new Error(); return res.text(); })
             .then(text => processCue(text, shouldPlay))
             .catch(() => {
-                // Попытка 2: Запрос через CORS-прокси
+                // Попытка 2: Загрузка через CORS-прокси при блокировке браузером
                 fetch(`https://allorigins.win{encodeURIComponent(targetUrl)}`)
                     .then(res => res.json())
                     .then(data => processCue(data.contents || '', shouldPlay))
                     .catch(() => {
-                        console.warn("Файл .cue недоступен по сети. Включается авторазбивка.");
+                        console.warn("Файл .cue недоступен. Включается автоматическая нарезка.");
                         fallbackToAutoSplit(shouldPlay);
                     });
             });
@@ -70,7 +78,6 @@ function fallbackToAutoSplit(shouldPlay) {
     if (audio.duration) {
         generateFallbackTracks(audio.duration, shouldPlay);
     } else {
-        // Если длительность еще не подгрузилась, вешаем одноразовый слушатель
         const onMetadata = () => {
             generateFallbackTracks(audio.duration, shouldPlay);
             audio.removeEventListener('loadedmetadata', onMetadata);
@@ -85,7 +92,7 @@ export function startPlayback() {
         playIcon.innerText = "⏸";
         playerView.classList.remove('paused');
         updateTrackDisplay();
-    }).catch(err => console.log("Старт заблокирован браузером до клика:", err));
+    }).catch(err => console.log("Воспроизведение заблокировано до клика:", err));
 }
 
 export function setPausedState() {
@@ -93,13 +100,14 @@ export function setPausedState() {
     playerView.classList.add('paused');
 }
 
-// Автоматическая нарезка аудиофайла на куски по 10 минут
+// Резервный режим: Нарезка аудиофайла на виртуальные 10-минутные треки
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 5 * 60; // 600 секунд
+    const segmentDuration = 10 * 60; // 600 секунд
     let startTime = 0;
     let trackNumber = 1;
+    const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
 
     while (startTime < totalDuration) {
         let endTime = startTime + segmentDuration;
@@ -107,7 +115,8 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
         
         state.tracks.push({
             indexStr: trackNumber.toString().padStart(2, '0'),
-            title: `Track ${trackNumber} (Auto)`,
+            performer: defaultPerformer,
+            title: `Track ${trackNumber} (Auto Split)`,
             startTime: startTime,
             endTime: endTime
         });
@@ -120,42 +129,47 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
     else updateTrackDisplay();
 }
 
-// Надежный парсер CUE разметки, защищенный от регулярных ошибок
-// player.js
+// Парсер .cue разметки с поддержкой формата Performer - Title
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
-    let albumPerformer = "Unknown Artist"; // Переменная для хранения главного артиста альбома
+    let albumPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
     state.tracks = [];
 
     lines.forEach(line => {
         const trimmed = line.trim();
         
-        // Находим главного исполнителя альбома (пишется до ключевого слова TRACK)
+        // Поиск главного исполнителя релиза (до объявления первого трека)
         if (trimmed.startsWith('PERFORMER') && !currentTrack) {
             const albumPerfMatch = trimmed.match(/"([^"]+)"/);
             if (albumPerfMatch) albumPerformer = albumPerfMatch[1];
         } 
+        // Объявление новой дорожки
         else if (trimmed.startsWith('TRACK')) {
             if (currentTrack) state.tracks.push(currentTrack);
             const parts = trimmed.split(/\s+/);
             const trackNum = parts[1] || (state.tracks.length + 1).toString().padStart(2, '0');
-            // По умолчанию даем треку главного исполнителя альбома
+            
             currentTrack = { 
                 indexStr: trackNum, 
-                performer: albumPerformer, 
+                performer: albumPerformer, // По умолчанию наследует имя артиста альбома
                 title: 'Unknown Track', 
                 startTime: 0, 
                 endTime: Infinity 
             };
-        } else if (trimmed.startsWith('PERFORMER') && currentTrack) {
-            // Если у конкретного трека свой исполнитель (например, feat.)
+        } 
+        // Индивидуальный исполнитель трека (например, при feat. / гостевом участии)
+        else if (trimmed.startsWith('PERFORMER') && currentTrack) {
             const trackPerfMatch = trimmed.match(/"([^"]+)"/);
             if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1];
-        } else if (trimmed.startsWith('TITLE') && currentTrack) {
+        } 
+        // Название конкретного трека
+        else if (trimmed.startsWith('TITLE') && currentTrack) {
             const titleMatch = trimmed.match(/"([^"]+)"/);
             if (titleMatch) currentTrack.title = titleMatch[1];
-        } else if (trimmed.startsWith('INDEX 01') && currentTrack) {
+        } 
+        // Временная метка начала трека
+        else if (trimmed.startsWith('INDEX 01') && currentTrack) {
             const timeMatch = trimmed.match(/(\d+):(\d+):(\d+)/);
             if (timeMatch) {
                 const minutes = parseInt(timeMatch[1], 10) || 0;
@@ -166,7 +180,7 @@ function parseCue(cueText) {
     });
     if (currentTrack) state.tracks.push(currentTrack);
 
-    // Расчет времени окончания треков
+    // Фиксация временных рамок окончания каждого трека
     for (let i = 0; i < state.tracks.length; i++) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
@@ -177,19 +191,7 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
-    if (currentTrack) state.tracks.push(currentTrack);
-
-    // Точный расчет интервалов окончания каждого трека
-    for (let i = 0; i < state.tracks.length; i++) {
-        if (i < state.tracks.length - 1) {
-            state.tracks[i].endTime = state.tracks[i + 1].startTime;
-        } else {
-            state.tracks[i].endTime = audio.duration || Infinity;
-        }
-    }
-    renderPlaylist();
-}
-
+// Отрисовка элементов плейлиста в стиле Apple Lyrics
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
@@ -197,7 +199,7 @@ function renderPlaylist() {
         li.setAttribute('data-index', index);
         li.innerHTML = `
             <div class="track-meta">
-                <span>${track.indexStr}. ${track.title}</span>
+                <span>${track.indexStr}. ${track.performer} – ${track.title}</span>
                 <span>${formatTime(track.startTime)}</span>
             </div>
             <div class="track-mini-progress"></div>
@@ -208,7 +210,7 @@ function renderPlaylist() {
     updateActiveTrackVisual();
 }
 
-// Принудительный выбор трека при клике
+// Принудительный выбор трека в DOM / по клику
 export function selectTrack(index) {
     if (index < 0 || index >= state.tracks.length) return;
     state.currentTrackIndex = index;
@@ -219,7 +221,7 @@ export function selectTrack(index) {
     startPlayback();
 }
 
-// Обновление стилей подсветки
+// Переключение CSS-подсветки активного трека и плавный скроллинг
 export function updateActiveTrackVisual() {
     const items = trackListElement.querySelectorAll('li');
     const targetLi = trackListElement.querySelector(`li[data-index="${state.currentTrackIndex}"]`);
@@ -236,37 +238,39 @@ export function updateActiveTrackVisual() {
     }
 }
 
+// Синхронизация бегущей строки и Media Session (экран магнитолы)
 export function updateTrackDisplay() {
     if (state.tracks[state.currentTrackIndex]) {
         const currentTrack = state.tracks[state.currentTrackIndex];
-        const text = `${currentTrack.indexStr}. ${currentTrack.title}`;
+        const fullTrackName = `${currentTrack.indexStr}. ${currentTrack.performer} – ${currentTrack.title}`;
         
+        // Сброс и перезапуск CSS-анимации Marquee
         currentTrackTitleDrive.style.animation = 'none';
         currentTrackTitleDrive.offsetHeight; 
-        currentTrackTitleDrive.innerText = text;
+        currentTrackTitleDrive.innerText = fullTrackName;
         currentTrackTitleDrive.style.animation = 'appleMarquee 14s linear infinite';
 
+        // Передача тегов на экран автомобиля по Bluetooth
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: currentTrack.title,
-                artist: document.getElementById('release-performer').innerText,
+                artist: currentTrack.performer,
                 album: document.getElementById('release-title').innerText,
                 artwork: [{ src: albumDatabase[state.activeAlbumIndex].imageUrl, sizes: '512x512', type: 'image/png' }]
             });
+            navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
         }
     }
 }
 
-// Конвертация секунд в MM:SS
+// Форматирование секунд в читаемый формат M:SS
 export function formatTime(secs) {
-    if (isNaN(secs) || secs === Infinity || secs < 0) return "0:00";
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+if (isNaN(secs) || secs === Infinity || secs < 0) return "0:00";
+const m = Math.floor(secs / 60);
+const s = Math.floor(secs % 60).toString().padStart(2, '0');
+return ${m}:${s};
 }
-
-// Добавьте это в самый конец файла player.js
+/ Добавьте это в самый конец файла player.js
 export function getActiveTracks() {
     return state.tracks;
 }
-
