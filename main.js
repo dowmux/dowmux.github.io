@@ -115,12 +115,26 @@ function setupEvents() {
         else { setPausedState(); selectTrack(0); audio.pause(); }
     });
 
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('previoustrack', () => prevBtn.click());
-        navigator.mediaSession.setActionHandler('nexttrack', () => nextBtn.click());
-        navigator.mediaSession.setActionHandler('play', () => playBtn.click());
-        navigator.mediaSession.setActionHandler('pause', () => playBtn.click());
-    }
+    // main.js (Проверьте этот блок в самом низу файла)
+if ('mediaSession' in navigator) {
+    // Магнитола шлет 'nexttrack' -> мы виртуально кликаем по нашей кнопке Next в коде
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+        nextBtn.click(); 
+    });
+
+    // Магнитола шлет 'previoustrack' -> мы виртуально кликаем по нашей кнопке Prev в коде
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+        prevBtn.click(); 
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => {
+        playBtn.click();
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+        playBtn.click();
+    });
+}
 }
 
 if ('serviceWorker' in navigator) {
