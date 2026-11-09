@@ -28,7 +28,6 @@ function init() {
 
 function setupEvents() {
     playBtn.addEventListener('click', () => {
-        // Вызовы визуализатора полностью вычищены
         if (audio.paused) startPlayback();
         else { audio.pause(); setPausedState(); }
     });
@@ -115,26 +114,35 @@ function setupEvents() {
         else { setPausedState(); selectTrack(0); audio.pause(); }
     });
 
-    // main.js (Проверьте этот блок в самом низу файла)
-if ('mediaSession' in navigator) {
-    // Магнитола шлет 'nexttrack' -> мы виртуально кликаем по нашей кнопке Next в коде
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-        nextBtn.click(); 
-    });
+    // ПОЛНАЯ СИНХРОНИЗАЦИЯ С МАГНИТОЛОЙ
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+            const currentTracks = getActiveTracks();
+            if (currentTracks.length === 0) return;
+            if (audio.currentTime - currentTracks[state.currentTrackIndex].startTime > 3) {
+                audio.currentTime = currentTracks[state.currentTrackIndex].startTime;
+            } else if (state.currentTrackIndex > 0) {
+                selectTrack(state.currentTrackIndex - 1);
+            } else {
+                selectTrack(currentTracks.length - 1);
+            }
+        });
 
-    // Магнитола шлет 'previoustrack' -> мы виртуально кликаем по нашей кнопке Prev в коде
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-        prevBtn.click(); 
-    });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+            const currentTracks = getActiveTracks();
+            if (currentTracks.length === 0) return;
+            if (state.currentTrackIndex < currentTracks.length - 1) selectTrack(state.currentTrackIndex + 1);
+            else selectTrack(0);
+        });
 
-    navigator.mediaSession.setActionHandler('play', () => {
-        playBtn.click();
-    });
+        navigator.mediaSession.setActionHandler('play', () => {
+            if (audio.paused) startPlayback();
+        });
 
-    navigator.mediaSession.setActionHandler('pause', () => {
-        playBtn.click();
-    });
-}
+        navigator.mediaSession.setActionHandler('pause', () => {
+            if (!audio.paused) { audio.pause(); setPausedState(); }
+        });
+    }
 }
 
 if ('serviceWorker' in navigator) {
