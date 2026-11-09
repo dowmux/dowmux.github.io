@@ -14,20 +14,16 @@ export let state = {
     activeAlbumIndex: 0
 };
 
-// Функция-геттер для передачи свежего массива в main.js
 export function getActiveTracks() {
     return state.tracks;
 }
 
-// Загрузка выбранного релиза
 export function loadRelease(index, shouldPlay = true) {
     state.activeAlbumIndex = index;
     const album = albumDatabase[index];
 
-    // Подсветка активной карточки в медиатеке
     document.querySelectorAll('.release-card').forEach((c, i) => c.classList.toggle('active', i === index));
     
-    // Обновление интерфейса данными релиза
     document.getElementById('release-cover').src = album.imageUrl;
     document.getElementById('bg-blur-image').src = album.imageUrl;
     document.getElementById('release-performer').innerText = album.performer;
@@ -43,12 +39,10 @@ export function loadRelease(index, shouldPlay = true) {
     if (album.cueUrl && album.cueUrl.trim() !== "") {
         const targetUrl = encodeURI(album.cueUrl);
         
-        // Попытка 1: Прямая загрузка .cue
         fetch(targetUrl)
             .then(res => { if (!res.ok) throw new Error(); return res.text(); })
             .then(text => processCue(text, shouldPlay))
             .catch(() => {
-                // Попытка 2: Загрузка через CORS-прокси при блокировке браузером
                 fetch(`https://allorigins.win{encodeURIComponent(targetUrl)}`)
                     .then(res => { if (!res.ok) throw new Error(); return res.json(); })
                     .then(data => processCue(data.contents || '', shouldPlay))
@@ -90,7 +84,7 @@ export function startPlayback() {
         playIcon.innerText = "⏸";
         playerView.classList.remove('paused');
         updateTrackDisplay();
-    }).catch(err => console.log("Воспроизведение заблокировано до клика:", err));
+    }).catch(err => console.log("Воспроизведение ожидается:", err));
 }
 
 export function setPausedState() {
@@ -98,11 +92,10 @@ export function setPausedState() {
     playerView.classList.add('paused');
 }
 
-// Резервный режим: Нарезка аудиофайла на виртуальные 10-минутные треки
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 10 * 60; // 600 секунд
+    const segmentDuration = 10 * 60;
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
@@ -127,7 +120,7 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
     else updateTrackDisplay();
 }
 
-// Парсер .cue разметки
+// Парсер .cue разметки (ИСПРАВЛЕНО И ГАРАНТИРОВАНО БЕЗ NaN)
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
@@ -163,20 +156,13 @@ function parseCue(cueText) {
             if (titleMatch) currentTrack.title = titleMatch[1];
         } 
         else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            // ЖЕСТКИЙ ФИКС ВРЕМЕНИ: извлекаем временную метку вида MM:SS:FF
+            // Регулярное выражение ищет группы цифр (минуты), (секунды), (кадры)
             const timeMatch = trimmed.match(/INDEX\s+01\s+(\d+):(\d+):(\d+)/i);
             if (timeMatch) {
+                // Извлекаем чистые числовые группы из совпадения регулярки [1] и [2]
                 const minutes = parseInt(timeMatch[1], 10) || 0;
                 const seconds = parseInt(timeMatch[2], 10) || 0;
                 currentTrack.startTime = (minutes * 60) + seconds;
-            } else {
-                // Запасной разбор на случай если пробелов больше
-                const parts = trimmed.split(/\s+/);
-                const timeStr = parts[2];
-                if (timeStr && timeStr.includes(':')) {
-                    const timeParts = timeStr.split(':');
-                    currentTrack.startTime = (parseInt(timeParts[0], 10) || 0) * 60 + (parseInt(timeParts[1], 10) || 0);
-                }
             }
         }
     });
@@ -193,7 +179,6 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
-// Отрисовка элементов плейлиста
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
@@ -212,7 +197,6 @@ function renderPlaylist() {
     updateActiveTrackVisual();
 }
 
-// Выбор трека в DOM
 export function selectTrack(index) {
     if (index < 0 || index >= state.tracks.length) return;
     state.currentTrackIndex = index;
@@ -223,7 +207,6 @@ export function selectTrack(index) {
     startPlayback();
 }
 
-// Подсветка активного трека
 export function updateActiveTrackVisual() {
     const items = trackListElement.querySelectorAll('li');
     const targetLi = trackListElement.querySelector(`li[data-index="${state.currentTrackIndex}"]`);
@@ -240,7 +223,6 @@ export function updateActiveTrackVisual() {
     }
 }
 
-// Синхронизация бегущей строки
 export function updateTrackDisplay() {
     if (state.tracks[state.currentTrackIndex]) {
         const currentTrack = state.tracks[state.currentTrackIndex];
@@ -263,7 +245,6 @@ export function updateTrackDisplay() {
     }
 }
 
-// Форматирование секунд в M:SS
 export function formatTime(secs) {
     if (isNaN(secs) || secs === Infinity || secs < 0) return "0:00";
     const m = Math.floor(secs / 60);
