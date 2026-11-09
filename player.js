@@ -14,12 +14,10 @@ export let state = {
     activeAlbumIndex: 0
 };
 
-// Передаем свежий массив треков в main.js
 export function getActiveTracks() {
     return state.tracks;
 }
 
-// Загрузка релиза
 export function loadRelease(index, shouldPlay = true) {
     state.activeAlbumIndex = index;
     const album = albumDatabase[index];
@@ -41,15 +39,16 @@ export function loadRelease(index, shouldPlay = true) {
     if (album.cueUrl && album.cueUrl.trim() !== "") {
         const targetUrl = encodeURI(album.cueUrl);
         
-        // Попытка 1: Прямая загрузка .cue
+        // Попытка 1: Прямая загрузка
         fetch(targetUrl)
             .then(res => { if (!res.ok) throw new Error(); return res.text(); })
             .then(text => processCue(text, shouldPlay))
             .catch(() => {
-                // Попытка 2: Загрузка через CORS-прокси
+                console.log("Прямой CORS заблокирован. Запрос через RAW-прокси AllOrigins...");
+                // ИСПРАВЛЕНО: используем /raw вместо /get, чтобы получить чистый текст напрямую
                 fetch(`https://allorigins.win{encodeURIComponent(targetUrl)}`)
-                    .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-                    .then(data => processCue(data.contents || '', shouldPlay))
+                    .then(res => { if (!res.ok) throw new Error(); return res.text(); })
+                    .then(text => processCue(text, shouldPlay))
                     .catch(() => {
                         console.warn("Файл .cue недоступен по сети. Включается автоматическая нарезка.");
                         fallbackToAutoSplit(shouldPlay);
@@ -88,7 +87,7 @@ export function startPlayback() {
         playIcon.innerText = "⏸";
         playerView.classList.remove('paused');
         updateTrackDisplay();
-    }).catch(err => console.warn("Воспроизведение заблокировано браузером до клика:", err));
+    }).catch(err => console.warn("Воспроизведение ожидается:", err));
 }
 
 export function setPausedState() {
@@ -96,11 +95,10 @@ export function setPausedState() {
     playerView.classList.add('paused');
 }
 
-// Автонарезка альбома по 10 минут
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 5 * 60; // 600 секунд
+    const segmentDuration = 5 * 60;
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
@@ -125,7 +123,6 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
     else updateTrackDisplay();
 }
 
-// СТАБИЛЬНЫЙ СТРОКОВЫЙ ПАРСЕР .CUE — ПОЛНОСТЬЮ БЕЗ ОШИБОК И БЕЗ REGEX
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
@@ -135,11 +132,9 @@ function parseCue(cueText) {
     lines.forEach(line => {
         const trimmed = line.trim();
         
-        // 1. Извлекаем главного исполнителя альбома
         if (trimmed.startsWith('PERFORMER') && !currentTrack) {
             albumPerformer = trimmed.replace('PERFORMER', '').replace(/"/g, '').trim();
         } 
-        // 2. Находим новую дорожку
         else if (trimmed.startsWith('TRACK')) {
             if (currentTrack) state.tracks.push(currentTrack);
             const parts = trimmed.split(/\s+/);
@@ -153,23 +148,21 @@ function parseCue(cueText) {
                 endTime: Infinity 
             };
         } 
-        // 3. Индивидуальный исполнитель трека
         else if (trimmed.startsWith('PERFORMER') && currentTrack) {
             currentTrack.performer = trimmed.replace('PERFORMER', '').replace(/"/g, '').trim();
         } 
-        // 4. Название трека
         else if (trimmed.startsWith('TITLE') && currentTrack) {
             currentTrack.title = trimmed.replace('TITLE', '').replace(/"/g, '').trim();
         } 
-        // 5. Расчет тайминга INDEX 01
         else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            const cleanTime = trimmed.replace('INDEX 01', '').trim(); // Строка вида "MM:SS:FF"
+            const cleanTime = trimmed.replace('INDEX 01', '').trim();
             const timeParts = cleanTime.split(':');
             
             if (timeParts.length >= 2) {
+                // ИСПРАВЛЕНО: жестко берем первый и второй элементы массива времени
                 const minutes = parseInt(timeParts[0], 10) || 0;
                 const seconds = parseInt(timeParts[1], 10) || 0;
-                currentTrack.startTime = (minutes * 60) + seconds; // ЧИСТОЕ ЧИСЛО СЕКУНД
+                currentTrack.startTime = (minutes * 60) + seconds;
             }
         }
     });
@@ -180,7 +173,6 @@ function parseCue(cueText) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
         } else {
-            // ФИКС ИНФИНИТИ: Если общая длина файла недоступна по сети, искусственно закрываем последний трек (+5 минут)
             if (!audio.duration || audio.duration === Infinity || isNaN(audio.duration)) {
                 state.tracks[i].endTime = state.tracks[i].startTime + 300; 
             } else {
@@ -191,7 +183,6 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
-// Отрисовка треклиста в формате Исполнитель – Название
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
@@ -210,7 +201,6 @@ function renderPlaylist() {
     updateActiveTrackVisual();
 }
 
-// Принудительный клик по плейлисту
 export function selectTrack(index) {
     if (index < 0 || index >= state.tracks.length) return;
     state.currentTrackIndex = index;
@@ -221,7 +211,7 @@ export function selectTrack(index) {
     startPlayback();
 }
 
-// Обновление CSS подсветки
+// Показ активного трека
 export function updateActiveTrackVisual() {
     const items = trackListElement.querySelectorAll('li');
     const targetLi = trackListElement.querySelector(`li[data-index="${state.currentTrackIndex}"]`);
@@ -238,7 +228,6 @@ export function updateActiveTrackVisual() {
     }
 }
 
-// Вывод на дисплей бегущей строки и экрана автомобиля
 export function updateTrackDisplay() {
     if (state.tracks[state.currentTrackIndex]) {
         const currentTrack = state.tracks[state.currentTrackIndex];
@@ -261,7 +250,6 @@ export function updateTrackDisplay() {
     }
 }
 
-// Форматирование секунд в M:SS без багов
 export function formatTime(secs) {
     if (isNaN(secs) || secs === Infinity || secs < 0) return "0:00";
     const m = Math.floor(secs / 60);
