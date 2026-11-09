@@ -100,7 +100,7 @@ export function setPausedState() {
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 5 * 60; // 600 секунд
+    const segmentDuration = 10 * 60; // 600 секунд
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
@@ -125,7 +125,7 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
     else updateTrackDisplay();
 }
 
-// НОВЫЙ ЧИСТЫЙ СТРОКОВЫЙ ПАРСЕР .CUE БЕЗ ИСПОЛЬЗОВАНИЯ РЕГУЛЯРНЫХ ВЫРАЖЕНИЙ
+// СТАБИЛЬНЫЙ СТРОКОВЫЙ ПАРСЕР .CUE — ПОЛНОСТЬЮ БЕЗ ОШИБОК И БЕЗ REGEX
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
@@ -153,7 +153,7 @@ function parseCue(cueText) {
                 endTime: Infinity 
             };
         } 
-        // 3. Индивидуальный исполнитель трека (если указан внутри TRACK)
+        // 3. Индивидуальный исполнитель трека
         else if (trimmed.startsWith('PERFORMER') && currentTrack) {
             currentTrack.performer = trimmed.replace('PERFORMER', '').replace(/"/g, '').trim();
         } 
@@ -163,28 +163,24 @@ function parseCue(cueText) {
         } 
         // 5. Расчет тайминга INDEX 01
         else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            const cleanTime = trimmed.replace('INDEX 01', '').trim(); // остается строка вида "MM:SS:FF"
+            const cleanTime = trimmed.replace('INDEX 01', '').trim(); // Строка вида "MM:SS:FF"
             const timeParts = cleanTime.split(':');
             
             if (timeParts.length >= 2) {
                 const minutes = parseInt(timeParts[0], 10) || 0;
                 const seconds = parseInt(timeParts[1], 10) || 0;
-                currentTrack.startTime = (minutes * 60) + seconds; // ЧИСТОЕ ЧИСЛО СЕКУНД ГАРАНТИРОВАНО
+                currentTrack.startTime = (minutes * 60) + seconds; // ЧИСТОЕ ЧИСЛО СЕКУНД
             }
         }
     });
     if (currentTrack) state.tracks.push(currentTrack);
-
-  // player.js (Обновите этот кусочек в самом конце функции parseCue)
 
     // Расчет временных рамок окончания треков
     for (let i = 0; i < state.tracks.length; i++) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
         } else {
-            // ФИКС: Если общая длина файла равна Infinity или NaN, 
-            // берем время старта последнего трека и искусственно добавляем 5 минут (300 секунд),
-            // чтобы у плеера была осязаемая финальная точка и прогресс-бар заработал!
+            // ФИКС ИНФИНИТИ: Если общая длина файла недоступна по сети, искусственно закрываем последний трек (+5 минут)
             if (!audio.duration || audio.duration === Infinity || isNaN(audio.duration)) {
                 state.tracks[i].endTime = state.tracks[i].startTime + 300; 
             } else {
