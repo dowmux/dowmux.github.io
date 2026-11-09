@@ -14,16 +14,20 @@ export let state = {
     activeAlbumIndex: 0
 };
 
+// Функция-геттер для передачи свежего массива в main.js
 export function getActiveTracks() {
     return state.tracks;
 }
 
+// Загрузка выбранного релиза
 export function loadRelease(index, shouldPlay = true) {
     state.activeAlbumIndex = index;
     const album = albumDatabase[index];
 
+    // Подсветка активной карточки в медиатеке
     document.querySelectorAll('.release-card').forEach((c, i) => c.classList.toggle('active', i === index));
     
+    // Обновление интерфейса данными релиза
     document.getElementById('release-cover').src = album.imageUrl;
     document.getElementById('bg-blur-image').src = album.imageUrl;
     document.getElementById('release-performer').innerText = album.performer;
@@ -39,10 +43,12 @@ export function loadRelease(index, shouldPlay = true) {
     if (album.cueUrl && album.cueUrl.trim() !== "") {
         const targetUrl = encodeURI(album.cueUrl);
         
+        // Попытка 1: Прямая загрузка .cue
         fetch(targetUrl)
             .then(res => { if (!res.ok) throw new Error(); return res.text(); })
             .then(text => processCue(text, shouldPlay))
             .catch(() => {
+                // Попытка 2: Загрузка через CORS-прокси при блокировке браузером
                 fetch(`https://allorigins.win{encodeURIComponent(targetUrl)}`)
                     .then(res => { if (!res.ok) throw new Error(); return res.json(); })
                     .then(data => processCue(data.contents || '', shouldPlay))
@@ -92,10 +98,11 @@ export function setPausedState() {
     playerView.classList.add('paused');
 }
 
+// Резервный режим: Нарезка аудиофайла на виртуальные 10-минутные треки
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 10 * 60;
+    const segmentDuration = 10 * 60; // 600 секунд
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
@@ -120,7 +127,7 @@ function generateFallbackTracks(totalDuration, shouldPlay) {
     else updateTrackDisplay();
 }
 
-// Парсер .cue разметки (ИСПРАВЛЕНО И ГАРАНТИРОВАНО БЕЗ NaN)
+// Парсер .cue разметки
 function parseCue(cueText) {
     const lines = cueText.split('\n');
     let currentTrack = null;
@@ -132,7 +139,7 @@ function parseCue(cueText) {
         
         if (trimmed.startsWith('PERFORMER') && !currentTrack) {
             const albumPerfMatch = trimmed.match(/"([^"]+)"/);
-            if (albumPerfMatch) albumPerformer = albumPerfMatch[1];
+            if (albumPerfMatch) albumPerformer = albumPerfMatch[1]; // Фикс: берем первый индекс [1]
         } 
         else if (trimmed.startsWith('TRACK')) {
             if (currentTrack) state.tracks.push(currentTrack);
@@ -149,17 +156,17 @@ function parseCue(cueText) {
         } 
         else if (trimmed.startsWith('PERFORMER') && currentTrack) {
             const trackPerfMatch = trimmed.match(/"([^"]+)"/);
-            if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1];
+            if (trackPerfMatch) currentTrack.performer = trackPerfMatch[1]; // Фикс: берем первый индекс [1]
         } 
         else if (trimmed.startsWith('TITLE') && currentTrack) {
             const titleMatch = trimmed.match(/"([^"]+)"/);
-            if (titleMatch) currentTrack.title = titleMatch[1];
+            if (titleMatch) currentTrack.title = titleMatch[1]; // Фикс: берем первый индекс [1]
         } 
         else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            // Регулярное выражение ищет группы цифр (минуты), (секунды), (кадры)
+            // Регулярное выражение ищет группы цифр (минуты):(секунды):(кадры)
             const timeMatch = trimmed.match(/INDEX\s+01\s+(\d+):(\d+):(\d+)/i);
             if (timeMatch) {
-                // Извлекаем чистые числовые группы из совпадения регулярки [1] и [2]
+                // ИСПРАВЛЕНО: берем строго числовые индексы из групп совпадений регулярного выражения
                 const minutes = parseInt(timeMatch[1], 10) || 0;
                 const seconds = parseInt(timeMatch[2], 10) || 0;
                 currentTrack.startTime = (minutes * 60) + seconds;
@@ -179,6 +186,7 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
+// Отрисовка элементов плейлиста
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
