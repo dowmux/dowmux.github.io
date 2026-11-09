@@ -175,12 +175,21 @@ function parseCue(cueText) {
     });
     if (currentTrack) state.tracks.push(currentTrack);
 
+  // player.js (Обновите этот кусочек в самом конце функции parseCue)
+
     // Расчет временных рамок окончания треков
     for (let i = 0; i < state.tracks.length; i++) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
         } else {
-            state.tracks[i].endTime = audio.duration || Infinity;
+            // ФИКС: Если общая длина файла равна Infinity или NaN, 
+            // берем время старта последнего трека и искусственно добавляем 5 минут (300 секунд),
+            // чтобы у плеера была осязаемая финальная точка и прогресс-бар заработал!
+            if (!audio.duration || audio.duration === Infinity || isNaN(audio.duration)) {
+                state.tracks[i].endTime = state.tracks[i].startTime + 300; 
+            } else {
+                state.tracks[i].endTime = audio.duration;
+            }
         }
     }
     renderPlaylist();
