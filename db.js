@@ -10,10 +10,10 @@ export const albumDatabase = [
     {
         id: "album-2",
         performer: "Oliver Heldens",
-        albumName: "Heldeep Radio #643",
+        albumName: "Heldeep Radio #644",
         imageUrl: "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/17/5b/de/175bdeb3-74a0-836e-6118-4310eef22fe4/mza_1279829827300431381.jpg/400x400bb.webp",
         musicUrl: "HeldeepRadio.aac",
-        cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
+        cueUrl: "HeldeepRadio.cue" // Путь к другому .cue файлу
     },
     {
         id: "album-3",
