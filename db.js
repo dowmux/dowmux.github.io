@@ -25,8 +25,8 @@ export const albumDatabase = [
     },
     {
         id: "album-4",
-        performer: "Hosted by PARTS",
-        albumName: "Hosted by PARTS - Enhanced Sessions 872",
+        performer: "Enhanced Sessions",
+        albumName: "Enhanced Sessions Hosted by PARTS 872",
         imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQsptIzuzb_ck-74BF3OAPQAwQLegdcYpZN2uXgHCQ2V7S-tsxlqRkdgyI&s=10",
         musicUrl: "https://promodj.com/prelisten/7989965/Hosted_by_PARTS_Enhanced_Sessions_872_with_Mees_Salom_EBENEZER_872.mp3?hq=1&podcast=1",
         cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
