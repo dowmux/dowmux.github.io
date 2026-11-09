@@ -33,10 +33,10 @@ export const albumDatabase = [
     },
     {
         id: "album-5",
-        performer: "Anjunadeep",
-        albumName: "Anjunadeep - The Anjunadeep Edition 617",
-        imageUrl: "https://cdn.1001tracklists.com/images/artworks/sources/6/7/a/7/161207-artwork-the-anjunadeep-edition-5848458523e77-Medium.jpg",
-        musicUrl: "https://promodj.com/prelisten/7989068/Anjunadeep_The_Anjunadeep_Edition_617_with_PALLADIAN_617.mp3?hq=1&podcast=1",
+        performer: "PRISMATIC by Tiësto",
+        albumName: "PRISMATIC by Tiësto Episode 044",
+        imageUrl: "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/dd/2a/5b/dd2a5b04-7c16-17fc-3109-80347a081c2d/mza_4148698011332976630.jpeg/400x400bb.webp",
+        musicUrl: "prismatic.aac",
         cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
     },
     {
