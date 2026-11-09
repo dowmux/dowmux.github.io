@@ -37,7 +37,7 @@ export const albumDatabase = [
         albumName: "PRISMATIC by Tiësto Episode 044",
         imageUrl: "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/dd/2a/5b/dd2a5b04-7c16-17fc-3109-80347a081c2d/mza_4148698011332976630.jpeg/400x400bb.webp",
         musicUrl: "prismatic.aac",
-        cueUrl: "tracks/chill_beats.cue" // Путь к другому .cue файлу
+        cueUrl: "prismatic.cue" // Путь к другому .cue файлу
     },
     {
         id: "album-6",
