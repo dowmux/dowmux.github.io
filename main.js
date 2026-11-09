@@ -52,13 +52,28 @@ function setupEvents() {
     });
 
     skipForwardBtn.addEventListener('click', () => {
-        if (!audio.duration) return;
+        const currentTracks = getActiveTracks();
+        if (currentTracks.length === 0) return;
+        
+        // Определяем финальную точку для безопасной перемотки вперед
+        let maxDuration = audio.duration;
+        if (!maxDuration || maxDuration === Infinity || isNaN(maxDuration)) {
+            maxDuration = currentTracks[currentTracks.length - 1].endTime;
+        }
+
         const targetTime = audio.currentTime + 60;
-        audio.currentTime = targetTime < audio.duration ? targetTime : audio.duration;
+        audio.currentTime = targetTime < maxDuration ? targetTime : maxDuration;
     });
 
     progressContainer.addEventListener('click', (e) => {
-        const duration = audio.duration;
+        let duration = audio.duration;
+        const currentTracks = getActiveTracks();
+
+        // ФИКС: Если сервер вернул Infinity, берем длительность из конца последнего трека CUE
+        if ((!duration || duration === Infinity || isNaN(duration)) && currentTracks.length > 0) {
+            duration = currentTracks[currentTracks.length - 1].endTime;
+        }
+
         if (duration && duration > 0) {
             const clickPercent = e.offsetX / progressContainer.clientWidth;
             audio.currentTime = clickPercent * duration;
@@ -73,20 +88,20 @@ function setupEvents() {
     // Браузер получил метаданные аудио — выставляем точный конец альбома для последнего трека
     audio.addEventListener('loadedmetadata', () => {
         const currentTracks = getActiveTracks();
-        if (currentTracks.length > 0) {
+        if (currentTracks.length > 0 && audio.duration && audio.duration !== Infinity && !isNaN(audio.duration)) {
             currentTracks[currentTracks.length - 1].endTime = audio.duration;
-            console.log("Длительность аудиофайла успешно получена:", audio.duration);
+            console.log("Длительность аудиофайла успешно получена от сервера:", audio.duration);
         }
     });
 
     audio.addEventListener('timeupdate', () => {
         const currentTime = audio.currentTime;
-        const duration = audio.duration || 0;
+        let duration = audio.duration || 0;
         const currentTracks = getActiveTracks();
         
         if (!currentTracks || currentTracks.length === 0) return;
 
-        // Поиск активного индекса
+        // Поиск играющего в данный момент трека
         const actualTrackIndex = currentTracks.findIndex(t => currentTime >= t.startTime && currentTime < t.endTime);
         
         if (actualTrackIndex !== -1 && actualTrackIndex !== state.currentTrackIndex) {
@@ -95,12 +110,17 @@ function setupEvents() {
             updateTrackDisplay();
         }
 
-        // Обновление таймлайна
-        if (duration > 0) {
-            progressBar.style.width = `${(currentTime / duration) * 100}%`;
+        // ФИКС РАСЧЕТА ДЛИТЕЛЬНОСТИ: Если сервер не отдал длину релиза, подставляем конец CUE разметки
+        if (!duration || duration === Infinity || isNaN(duration)) {
+            duration = currentTracks[currentTracks.length - 1].endTime;
         }
 
-        // Заполнение полоски внутри строки плейлиста
+        // Обновление главного прогресс-бара альбома
+        if (duration > 0) {
+            progressBar.style.width = `${Math.min((currentTime / duration) * 100, 100)}%`;
+        }
+
+        // Заполнение полоски мини-прогресса внутри строки текущего трека
         const currentTrack = currentTracks[state.currentTrackIndex];
         if (currentTrack) {
             const trackDuration = currentTrack.endTime - currentTrack.startTime;
@@ -117,8 +137,10 @@ function setupEvents() {
             }
         }
 
+        // Расчет и вывод таймеров времени на экран (Apple Music стиль: справа пишется оставшееся время)
+        const timeLeft = duration - currentTime;
         document.getElementById('current-time').innerText = formatTime(currentTime);
-        document.getElementById('total-time').innerText = duration > 0 ? `-${formatTime(duration - currentTime)}` : "-0:00";
+        document.getElementById('total-time').innerText = duration > 0 ? `-${formatTime(timeLeft)}` : "-0:00";
     });
 
     audio.addEventListener('ended', () => {
@@ -126,6 +148,7 @@ function setupEvents() {
         else { setPausedState(); selectTrack(0); audio.pause(); }
     });
 
+    // Интеграция с мультирулем и магнитолой автомобиля (Media Session API)
     if ('mediaSession' in navigator) {
         navigator.mediaSession.setActionHandler('previoustrack', () => {
             const currentTracks = getActiveTracks();
@@ -156,6 +179,7 @@ function setupEvents() {
     }
 }
 
+// Запуск фонового сервис-воркера для PWA режима
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(() => {});
