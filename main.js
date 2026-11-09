@@ -10,7 +10,6 @@ const progressContainer = document.getElementById('progress-container');
 const progressBar = document.getElementById('progress-bar');
 const releasesGrid = document.getElementById('releases-grid');
 const trackListElement = document.getElementById('track-list');
-const volumeSlider = document.getElementById('volume-slider');
 
 function init() {
     releasesGrid.innerHTML = '';
@@ -54,12 +53,10 @@ function setupEvents() {
     skipForwardBtn.addEventListener('click', () => {
         const currentTracks = getActiveTracks();
         if (currentTracks.length === 0) return;
-        
         let maxDuration = audio.duration;
         if (!maxDuration || maxDuration === Infinity || isNaN(maxDuration)) {
             maxDuration = currentTracks[currentTracks.length - 1].endTime;
         }
-
         const targetTime = audio.currentTime + 60;
         audio.currentTime = targetTime < maxDuration ? targetTime : maxDuration;
     });
@@ -67,21 +64,13 @@ function setupEvents() {
     progressContainer.addEventListener('click', (e) => {
         let duration = audio.duration;
         const currentTracks = getActiveTracks();
-
         if ((!duration || duration === Infinity || isNaN(duration)) && currentTracks.length > 0) {
             duration = currentTracks[currentTracks.length - 1].endTime;
         }
-
         if (duration && duration > 0) {
-            const clickPercent = e.offsetX / progressContainer.clientWidth;
-            audio.currentTime = clickPercent * duration;
+            audio.currentTime = (e.offsetX / progressContainer.clientWidth) * duration;
         }
     });
-
-    volumeSlider.addEventListener('input', (e) => {
-        audio.volume = e.target.value;
-    });
-    audio.volume = volumeSlider.value;
 
     audio.addEventListener('loadedmetadata', () => {
         const currentTracks = getActiveTracks();
@@ -98,7 +87,6 @@ function setupEvents() {
         if (!currentTracks || currentTracks.length === 0) return;
 
         const actualTrackIndex = currentTracks.findIndex(t => currentTime >= t.startTime && currentTime < t.endTime);
-        
         if (actualTrackIndex !== -1 && actualTrackIndex !== state.currentTrackIndex) {
             state.currentTrackIndex = actualTrackIndex;
             updateActiveTrackVisual();
@@ -122,8 +110,7 @@ function setupEvents() {
                 if (activeLi) {
                     const miniBar = activeLi.querySelector('.track-mini-progress');
                     if (miniBar) {
-                        const percent = Math.min((trackElapsed / trackDuration) * 100, 100);
-                        miniBar.style.width = `${percent}%`;
+                        miniBar.style.width = `${Math.min((trackElapsed / trackDuration) * 100, 100)}%`;
                     }
                 }
             }
@@ -140,32 +127,10 @@ function setupEvents() {
     });
 
     if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-            const currentTracks = getActiveTracks();
-            if (currentTracks.length === 0) return;
-            if (audio.currentTime - currentTracks[state.currentTrackIndex].startTime > 3) {
-                audio.currentTime = currentTracks[state.currentTrackIndex].startTime;
-            } else if (state.currentTrackIndex > 0) {
-                selectTrack(state.currentTrackIndex - 1);
-            } else {
-                selectTrack(currentTracks.length - 1);
-            }
-        });
-
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
-            const currentTracks = getActiveTracks();
-            if (currentTracks.length === 0) return;
-            if (state.currentTrackIndex < currentTracks.length - 1) selectTrack(state.currentTrackIndex + 1);
-            else selectTrack(0);
-        });
-
-        navigator.mediaSession.setActionHandler('play', () => {
-            if (audio.paused) startPlayback();
-        });
-
-        navigator.mediaSession.setActionHandler('pause', () => {
-            if (!audio.paused) { audio.pause(); setPausedState(); }
-        });
+        navigator.mediaSession.setActionHandler('previoustrack', () => prevBtn.click());
+        navigator.mediaSession.setActionHandler('nexttrack', () => nextBtn.click());
+        navigator.mediaSession.setActionHandler('play', () => playBtn.click());
+        navigator.mediaSession.setActionHandler('pause', () => playBtn.click());
     }
 }
 

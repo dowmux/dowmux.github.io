@@ -3,40 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
     <title>Apple Music Hub with CUE</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Динамический размытый фон -->
     <div class="blur-bg-container">
         <img id="bg-blur-image" src="" alt="">
     </div>
 
-    <!-- Основной контейнер приложения -->
     <div class="apple-music-hub">
         
         <!-- ОКНО 1: МЕДИАТЕКА (РЕЛИЗЫ) -->
         <div class="library-container">
             <div class="window-header">Медиатека</div>
-            <div id="releases-grid" class="releases-grid">
-                <!-- Релизы генерируются через JS -->
-            </div>
+            <div id="releases-grid" class="releases-grid"></div>
         </div>
 
-        <!-- ОКНО 2: ПЛЕЕР (ТЕКУЩИЙ РЕЛИЗ И ТРЕКИ) -->
+        <!-- ОКНО 2: ПЛЕЕР -->
         <div class="player-view paused">
             <div class="player-header">
                 <div class="handle"></div>
             </div>
 
-            <!-- Блок обложки -->
             <div class="album-art-zone">
                 <img id="release-cover" src="" alt="Обложка">
             </div>
 
-            <!-- Информация о текущем треке -->
             <div class="track-meta-block">
                 <div class="marquee-wrapper">
                     <h1 id="current-track-title">Выберите релиз...</h1>
@@ -45,9 +38,7 @@
                 <p id="release-title" class="album-subtitle">Альбом</p>
             </div>
 
-            <!-- Скрытый аудио-элемент -->
-           <!-- Обновите эту строку в index.html -->
-<audio id="audio-element" crossorigin="anonymous" preload="auto"></audio>
+            <audio id="audio-element"></audio>
 
             <!-- Таймлайн прогресса -->
             <div class="timeline-area">
@@ -60,26 +51,22 @@
                 </div>
             </div>
             
-            <!-- Управление воспроизведением -->
-           <!-- Управление воспроизведением -->
-<div class="playback-controls">
-    <button id="prev-btn" class="apple-btn side-btn">
-        <svg viewBox="0 0 24 24"><path d="M6 19h2V5H6v14zm3.5-7L19 19V5L9.5 12z"/></svg>
-    </button>
-    <button id="play-btn" class="apple-btn play-btn">
-        <span id="play-icon">▶</span>
-    </button>
-    <button id="next-btn" class="apple-btn side-btn">
-        <svg viewBox="0 0 24 24"><path d="M6 5v14l8.5-7L6 5zm10 0v14h2V5h-2z"/></svg>
-    </button>
-    <!-- Новая кнопка: Перемотка на +1 минуту -->
-    <button id="skip-forward-btn" class="apple-btn side-btn" title="Вперед на 1 минуту">
-        <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
-    </button>
-</div>
+            <!-- Управление -->
+            <div class="playback-controls">
+                <button id="prev-btn" class="apple-btn side-btn">
+                    <svg viewBox="0 0 24 24"><path d="M6 19h2V5H6v14zm3.5-7L19 19V5L9.5 12z"/></svg>
+                </button>
+                <button id="play-btn" class="apple-btn play-btn">
+                    <span id="play-icon">▶</span>
+                </button>
+                <button id="next-btn" class="apple-btn side-btn">
+                    <svg viewBox="0 0 24 24"><path d="M6 5v14l8.5-7L6 5zm10 0v14h2V5h-2z"/></svg>
+                </button>
+                <button id="skip-forward-btn" class="apple-btn side-btn" title="Вперед на 1 минуту">
+                    <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+                </button>
+            </div>
 
-
-            <!-- Тексты / Список треков из CUE -->
             <div class="apple-playlist-section">
                 <div class="playlist-header">Треки из .cue</div>
                 <ul id="track-list"></ul>
