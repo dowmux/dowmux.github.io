@@ -59,7 +59,10 @@ function setupEvents() {
 
     progressContainer.addEventListener('click', (e) => {
         const duration = audio.duration;
-        if (duration) audio.currentTime = (e.offsetX / progressContainer.clientWidth) * duration;
+        if (duration && duration > 0) {
+            const clickPercent = e.offsetX / progressContainer.clientWidth;
+            audio.currentTime = clickPercent * duration;
+        }
     });
 
     volumeSlider.addEventListener('input', (e) => {
@@ -67,9 +70,13 @@ function setupEvents() {
     });
     audio.volume = volumeSlider.value;
 
+    // Браузер получил метаданные аудио — выставляем точный конец альбома для последнего трека
     audio.addEventListener('loadedmetadata', () => {
         const currentTracks = getActiveTracks();
-        if (currentTracks.length > 0) currentTracks[currentTracks.length - 1].endTime = audio.duration;
+        if (currentTracks.length > 0) {
+            currentTracks[currentTracks.length - 1].endTime = audio.duration;
+            console.log("Длительность аудиофайла успешно получена:", audio.duration);
+        }
     });
 
     audio.addEventListener('timeupdate', () => {
@@ -79,6 +86,7 @@ function setupEvents() {
         
         if (!currentTracks || currentTracks.length === 0) return;
 
+        // Поиск активного индекса
         const actualTrackIndex = currentTracks.findIndex(t => currentTime >= t.startTime && currentTime < t.endTime);
         
         if (actualTrackIndex !== -1 && actualTrackIndex !== state.currentTrackIndex) {
@@ -87,8 +95,12 @@ function setupEvents() {
             updateTrackDisplay();
         }
 
-        if (duration > 0) progressBar.style.width = `${(currentTime / duration) * 100}%`;
+        // Обновление таймлайна
+        if (duration > 0) {
+            progressBar.style.width = `${(currentTime / duration) * 100}%`;
+        }
 
+        // Заполнение полоски внутри строки плейлиста
         const currentTrack = currentTracks[state.currentTrackIndex];
         if (currentTrack) {
             const trackDuration = currentTrack.endTime - currentTrack.startTime;
@@ -114,7 +126,6 @@ function setupEvents() {
         else { setPausedState(); selectTrack(0); audio.pause(); }
     });
 
-    // ПОЛНАЯ СИНХРОНИЗАЦИЯ С МАГНИТОЛОЙ
     if ('mediaSession' in navigator) {
         navigator.mediaSession.setActionHandler('previoustrack', () => {
             const currentTracks = getActiveTracks();
