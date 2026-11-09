@@ -42,10 +42,10 @@ export const albumDatabase = [
     {
         id: "album-6",
         performer: "Armin van Buuren – A State Of Trance",
-        albumName: "Armin van Buuren – A State Of Trance 1301 (UNFILTERED #009)",
+        albumName: "Armin van Buuren – A State Of Trance 1302",
         imageUrl: "http://trancecentury.com/wp-content/uploads/2020/09/arminvanbuuren.jpg",
-        musicUrl: "https://cs9-1v4.vkuseraudio.net/s/v1/acmp/3F-sYt7X3TlwMB1ozFniPWvN6FBDvkaldyEaVZtXixpJeyov8cxAsbiG2WUwdYpt8p8JFZGHveux4Z0t87llpFJ9MABAdLAiPmUYRYanqOHCD3sLFMVKeOVY0yoEFVHef_w8aiZ5HJTvjAaFBDwdADEULueI-afuy4MhBl04exprDB3YjC8r.mp3?siren=1",
-        cueUrl: "asot1301.cue" // Путь к другому .cue файлу
+        musicUrl: "https://psv4.vkuseraudio.net/s/v1/amp2/ZUxOhgoQXxceJgPrkVn3tQ0irLVWtdvg9uaKE2DeZ5eo0-056AMXYwWZNzmdagmsRiofO8AqzhD6Gxma50xjA7BjkorIjfqH0Oy44_GOy4EBXGJKRcouVUGcdmX35d8WAcL6y7Gu-rPU82dhahadLGgSSTX9UdE9xZfprTI.mp3?siren=1",
+        cueUrl: "asot.cue" // Путь к другому .cue файлу
     },
     {
         id: "album-7",
