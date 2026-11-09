@@ -86,7 +86,6 @@ function fallbackToAutoSplit(shouldPlay) {
 }
 
 export function startPlayback() {
-    // ВСЯ ВИЗУАЛИЗАЦИЯ И АУДИОКОНТЕКСТ УДАЛЕНЫ. Запускается чистый стандартный звук.
     audio.play().then(() => {
         playIcon.innerText = "⏸";
         playerView.classList.remove('paused');
@@ -103,7 +102,7 @@ export function setPausedState() {
 function generateFallbackTracks(totalDuration, shouldPlay) {
     state.tracks = [];
     state.currentTrackIndex = 0;
-    const segmentDuration = 5 * 60; // 600 секунд
+    const segmentDuration = 10 * 60; // 600 секунд
     let startTime = 0;
     let trackNumber = 1;
     const defaultPerformer = document.getElementById('release-performer').innerText || "Unknown Artist";
@@ -164,16 +163,26 @@ function parseCue(cueText) {
             if (titleMatch) currentTrack.title = titleMatch[1];
         } 
         else if (trimmed.startsWith('INDEX 01') && currentTrack) {
-            const timeMatch = trimmed.match(/(\d+):(\d+):(\d+)/);
+            // ЖЕСТКИЙ ФИКС ВРЕМЕНИ: извлекаем временную метку вида MM:SS:FF
+            const timeMatch = trimmed.match(/INDEX\s+01\s+(\d+):(\d+):(\d+)/i);
             if (timeMatch) {
                 const minutes = parseInt(timeMatch[1], 10) || 0;
                 const seconds = parseInt(timeMatch[2], 10) || 0;
                 currentTrack.startTime = (minutes * 60) + seconds;
+            } else {
+                // Запасной разбор на случай если пробелов больше
+                const parts = trimmed.split(/\s+/);
+                const timeStr = parts[2];
+                if (timeStr && timeStr.includes(':')) {
+                    const timeParts = timeStr.split(':');
+                    currentTrack.startTime = (parseInt(timeParts[0], 10) || 0) * 60 + (parseInt(timeParts[1], 10) || 0);
+                }
             }
         }
     });
     if (currentTrack) state.tracks.push(currentTrack);
 
+    // Расчет времени окончания треков
     for (let i = 0; i < state.tracks.length; i++) {
         if (i < state.tracks.length - 1) {
             state.tracks[i].endTime = state.tracks[i + 1].startTime;
@@ -184,7 +193,7 @@ function parseCue(cueText) {
     renderPlaylist();
 }
 
-// Отрисовка элементов плейлиста (Формат: Performer – Title)
+// Отрисовка элементов плейлиста
 function renderPlaylist() {
     trackListElement.innerHTML = '';
     state.tracks.forEach((track, index) => {
@@ -231,7 +240,7 @@ export function updateActiveTrackVisual() {
     }
 }
 
-// Синхронизация бегущей строки (Формат: Performer – Title)
+// Синхронизация бегущей строки
 export function updateTrackDisplay() {
     if (state.tracks[state.currentTrackIndex]) {
         const currentTrack = state.tracks[state.currentTrackIndex];
