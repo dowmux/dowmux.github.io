@@ -2,9 +2,9 @@ export const albumDatabase = [
     {
         id: "album-1",
         performer: "Above & Beyond",
-        albumName: "Above & Beyond - Group Therapy 701",
+        albumName: "Above & Beyond - Group Therapy 702",
         imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGjoW5q096B5IRX8o33sHrkGTkf5QguVxcDr5bRROpM1D_WHHErmXE4cfY&s=10",
-        musicUrl: "https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1",
+        musicUrl: "https://cs9-4v4.vkuseraudio.net/s/v1/acmp/kHZqNilP2jcYmho1hccJ6KnMcpe0hmzvd5KjaCfXwN2bpVQ3Uv8f-PIL4m6A4gf8O669246_d-t690wkjOuCHeQOuuXqZb9Ao127tlu_AKP0W7cdzRV2rvCxwunUJBjqs_ThIYRA68CHcdlQqj7IESOh6Xkw-8Ww6XrRPonJqGJN4_sL9MBL.mp3?siren=1",
         cueUrl: "grouptherapy.cue" // Путь к вашему локальному или внешнему .cue файлу
     },
     {
