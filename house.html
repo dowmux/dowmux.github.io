@@ -39,12 +39,12 @@
     image-rendering: crisp-edges;
   }
 
-  /* ====== SPECTRUM — на весь экран по высоте ====== */
+  /* ====== SPECTRUM — полоса по низу экрана ====== */
   #spectrumWrap {
     position: fixed;
     left: 0; right: 0; bottom: 0;
     width: 100vw;
-    height: 100vh;         /* ← было 220px */
+    height: 180px;         /* ← снова низкая полоса */
     z-index: 800;
     pointer-events: none;
     opacity: 0;
@@ -95,7 +95,7 @@
 
   #status {
     position: fixed;
-    bottom: 240px; left: 50%;
+    bottom: 200px; left: 50%;
     transform: translateX(-50%);
     color: rgba(255,255,255,0.85);
     font-size: 22px;
@@ -112,7 +112,7 @@
 
   #hint {
     position: fixed;
-    top: 70px; left: 50%;
+    top: 20px; left: 50%;
     transform: translateX(-50%);
     color: rgba(255,255,255,0.5);
     font-size: 11px;
@@ -132,7 +132,7 @@
 
   #audioWarn {
     position: fixed;
-    top: 110px; left: 50%;
+    top: 60px; left: 50%;
     transform: translateX(-50%);
     color: rgba(255,200,80,0.85);
     font-size: 10px;
@@ -150,10 +150,10 @@
   }
   #audioWarn.visible { opacity: 1; }
 
-  /* ====== CROSSBAR — в нижней части экрана ====== */
+  /* ====== CROSSBAR — над спектром ====== */
   #progressWrap {
     position: fixed;
-    bottom: 220px; left: 0;      /* ← вернул вниз */
+    bottom: 180px; left: 0;   /* сразу над спектром */
     width: 100%;
     height: 44px;
     z-index: 1600;
@@ -250,10 +250,20 @@
     transition: opacity 0.06s ease-out;
   }
 
+  /* ====== ХАОС-ВСПЫШКА: цветной глитч поверх ====== */
+  #chaosFlash {
+    position: fixed; inset: 0;
+    opacity: 0;
+    z-index: 750;
+    pointer-events: none;
+    mix-blend-mode: color-dodge;
+    transition: opacity 0.1s ease-out;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #playBtn { animation: none; }
     .video-layer { transition: opacity 0.5s ease !important; }
-    #beatFlash { display: none; }
+    #beatFlash, #chaosFlash { display: none; }
   }
 </style>
 </head>
@@ -262,6 +272,7 @@
 <div id="stage"></div>
 
 <div id="beatFlash"></div>
+<div id="chaosFlash"></div>
 
 <div id="spectrumWrap">
   <canvas id="spectrumCanvas"></canvas>
@@ -298,26 +309,37 @@
    КОНФИГУРАЦИЯ
    ============================================================ */
 const CONFIG = {
-  LAYER_COUNT: 8,
+  // Больше слоёв → больше хаоса при переключении
+  LAYER_COUNT: 12,
   MAX_FPS: 60,
   REDUCED_MOTION: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 
   SPECTRUM_BARS: 128,
-
-  // Максимальная высота бара в долях от высоты экрана (1 = во весь экран)
-  SPECTRUM_MAX_HEIGHT: 1.0,
-  // Отражение сверху (доля высоты)
-  SPECTRUM_REFLECTION: 0.35,
+  // Высота полосы спектра внизу экрана
+  SPECTRUM_HEIGHT_PX: 180,
 
   TREBLE_BOOST_DB: 12,
   TREBLE_FREQ_HZ: 3000,
 
   BPM_MIN: 60,
   BPM_MAX: 160,
-  FLICKER_SLOW: [600, 1200],
-  FLICKER_FAST: [60, 140],
+  // Более узкие интервалы → чаще смена даже на медленном
+  FLICKER_SLOW: [400, 900],
+  FLICKER_FAST: [40, 100],
 
   STATUS_HIDE_DELAY: 2500,
+
+  // === ХАОС ===
+  // Шанс "двойного" переключения (два слоя подряд за один тик)
+  DOUBLE_SWITCH_CHANCE: 0.35,
+  // Шанс сбросить палитру на случайную при переключении (даже если задана вручную)
+  PALETTE_JUMP_CHANCE: 0.15,
+  // Шанс спонтанного "глитч-кадра" (инверсия + hue-rotate поверх)
+  GLITCH_CHANCE: 0.08,
+  // Шанс спонтанного зеркала (scaleX/-1)
+  MIRROR_CHANCE: 0.2,
+  // Шанс "вырванного" кадра — canvas уменьшается/смещается, вокруг чёрное
+  CROP_CHANCE: 0.18,
 
   PALETTES: [
     ['#ff004c', '#001eff', '#00fff0'],
@@ -330,10 +352,12 @@ const CONFIG = {
     ['#f12711', '#f5af19', '#12c2e9'],
     ['#e96443', '#904e95', '#00f2fe'],
     ['#fa709a', '#fee140', '#30cfd0'],
+    ['#00ff87', '#60efff', '#ff00c8'],
+    ['#fceabb', '#f8b500', '#00b09b'],
   ],
 
   PLAYLIST: [
-   {
+    {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
       title: 'VK Track',
     },
@@ -379,6 +403,7 @@ const progressFill = document.getElementById('progressFill');
 const timeLabel = document.getElementById('timeLabel');
 const nextBtn = document.getElementById('nextBtn');
 const beatFlash = document.getElementById('beatFlash');
+const chaosFlash = document.getElementById('chaosFlash');
 const spectrumWrap = document.getElementById('spectrumWrap');
 const spectrumCanvas = document.getElementById('spectrumCanvas');
 const spectrumCtx = spectrumCanvas.getContext('2d');
@@ -394,6 +419,7 @@ let flickerTimer = null;
 let animationFrame = null;
 let lastFrameTime = 0;
 let activePaletteIndex = -1;
+let glitchTimer = null;
 
 let audioCtx = null;
 let analyser = null;
@@ -639,7 +665,7 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
-   SPECTRUM — во всю высоту экрана
+   SPECTRUM — низкая полоса внизу
    ============================================================ */
 function resizeSpectrum() {
   const dpr = window.devicePixelRatio || 1;
@@ -663,18 +689,18 @@ function drawSpectrum() {
   const barWidth = W / bars;
   const gap = Math.max(1, barWidth * 0.15);
 
-  // Максимальная высота бара = весь экран (или чуть меньше)
-  const maxH = H * CONFIG.SPECTRUM_MAX_HEIGHT;
+  // Чуть больше хаоса в спектре: бары "дышат" от темпа
+  const heightChaos = 1 + tempoNorm * 0.3;
 
   for (let i = 0; i < bars; i++) {
     const v = spectrumValues[i];
     const boost = 1 + (i / bars) * 0.5;
-    const barH = Math.min(maxH, v * maxH * 0.95 * boost + beatPulse * maxH * 0.08);
+    const barH = Math.min(H, v * H * 0.95 * boost * heightChaos + beatPulse * H * 0.1);
 
     const x = i * barWidth;
     const y = H - barH;
 
-    const hue = 260 - (i / bars) * 260 + (highPulse * 30);
+    const hue = 260 - (i / bars) * 260 + (highPulse * 30) + (Math.random() * 20 - 10);
     const sat = 100;
     const light = 45 + v * 35 + highPulse * 15;
 
@@ -686,21 +712,19 @@ function drawSpectrum() {
     spectrumCtx.fillStyle = grad;
     spectrumCtx.fillRect(x + gap / 2, y, barWidth - gap, barH);
 
-    // Пик-кап
     spectrumCtx.fillStyle = `hsla(${hue}, 100%, 85%, ${0.6 + v * 0.4})`;
     spectrumCtx.fillRect(x + gap / 2, y - 2, barWidth - gap, 2);
   }
 
-  // Отражение сверху (мягкое)
   spectrumCtx.globalCompositeOperation = 'screen';
-  spectrumCtx.globalAlpha = 0.22;
+  spectrumCtx.globalAlpha = 0.25;
   for (let i = 0; i < bars; i++) {
     const v = spectrumValues[i];
-    const reflH = Math.min(H * CONFIG.SPECTRUM_REFLECTION, v * H * CONFIG.SPECTRUM_REFLECTION);
+    const barH = Math.min(H * 0.6, v * H * 0.45);
     const x = i * barWidth;
     const hue = 260 - (i / bars) * 260;
     spectrumCtx.fillStyle = `hsla(${hue}, 100%, 60%, 0.3)`;
-    spectrumCtx.fillRect(x + gap / 2, 0, barWidth - gap, reflH);
+    spectrumCtx.fillRect(x + gap / 2, 0, barWidth - gap, barH);
   }
   spectrumCtx.globalAlpha = 1;
   spectrumCtx.globalCompositeOperation = 'source-over';
@@ -810,14 +834,15 @@ function drawScene(ctx, canvas, state, now) {
     case 8: drawImage(ctx, W, H, state, time, pal); break;
   }
 
-  if (Math.random() < 0.15 + highEnergy * 0.5) {
+  // Больше глитч-полос — хаос растёт с highEnergy и темпом
+  if (Math.random() < 0.2 + highEnergy * 0.6 + tempoNorm * 0.2) {
     ctx.globalCompositeOperation = 'screen';
-    const n = 1 + Math.floor(highEnergy * 4);
+    const n = 1 + Math.floor(highEnergy * 6 + tempoNorm * 3);
     for (let i = 0; i < n; i++) {
       const gx = Math.random() * W;
       const gy = Math.random() * H;
-      ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 50%, ${0.15 + highEnergy * 0.4})`;
-      ctx.fillRect(gx, gy, Math.random() * 200 + 50, Math.random() * 8 + 2);
+      ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 50%, ${0.15 + highEnergy * 0.5})`;
+      ctx.fillRect(gx, gy, Math.random() * 300 + 50, Math.random() * 12 + 2);
     }
     ctx.globalCompositeOperation = 'source-over';
   }
@@ -1159,12 +1184,35 @@ function hexToRgb(hex) {
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ
+   ХАОС-ВСПЫШКА (глитч поверх всего)
+   ============================================================ */
+function triggerChaosFlash() {
+  if (CONFIG.REDUCED_MOTION) return;
+  const hue = Math.random() * 360;
+  chaosFlash.style.background = `linear-gradient(${Math.random()*360}deg,
+    hsla(${hue}, 100%, 50%, 0.35),
+    hsla(${(hue + 120) % 360}, 100%, 50%, 0.25))`;
+  chaosFlash.style.opacity = '1';
+  setTimeout(() => { chaosFlash.style.opacity = '0'; }, 60 + Math.random() * 100);
+}
+
+/* ============================================================
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — больше хаоса
    ============================================================ */
 function switchRandomLayer() {
   const idx = Math.floor(Math.random() * layers.length);
   const reduce = CONFIG.REDUCED_MOTION;
   const tempo = tempoNorm;
+
+  // Случайный сброс палитры — внезапные "прыжки" цвета
+  if (Math.random() < CONFIG.PALETTE_JUMP_CHANCE) {
+    activePaletteIndex = -1;
+  }
+
+  // Случайная хаос-вспышка
+  if (Math.random() < CONFIG.GLITCH_CHANCE * (0.5 + tempo)) {
+    triggerChaosFlash();
+  }
 
   layers.forEach((layer, i) => {
     const el = layer.canvas;
@@ -1190,35 +1238,58 @@ function switchRandomLayer() {
         el.style.transform = 'none';
         el.style.filter = 'none';
       } else {
-        const scaleAmp = 0.15 + tempo * 0.6;
-        const rotateAmp = 2 + tempo * 14;
-        const skewAmp = 1 + tempo * 10;
-        const transAmp = 3 + tempo * 20;
-        const blurChance = 0.05 + tempo * 0.25;
+        // Усиленные амплитуды трансформаций
+        const scaleAmp = 0.25 + tempo * 0.9;
+        const rotateAmp = 4 + tempo * 22;
+        const skewAmp = 2 + tempo * 18;
+        const transAmp = 5 + tempo * 35;
+        const blurChance = 0.08 + tempo * 0.35;
 
-        const scale = 1 - scaleAmp / 2 + Math.random() * scaleAmp;
+        const scale = Math.max(0.4, 1 - scaleAmp / 2 + Math.random() * scaleAmp);
         const rotate = (Math.random() - 0.5) * rotateAmp;
         const skewX = (Math.random() - 0.5) * skewAmp;
         const skewY = (Math.random() - 0.5) * skewAmp;
         const tx = (Math.random() - 0.5) * transAmp;
         const ty = (Math.random() - 0.5) * transAmp;
         const hue = Math.random() * 360;
-        const sat = 0.7 + Math.random() * 0.8 + tempo * 0.5;
-        const con = 0.9 + Math.random() * 0.6 + tempo * 0.4;
+        const sat = 0.7 + Math.random() * 1.0 + tempo * 0.6;
+        const con = 0.9 + Math.random() * 0.8 + tempo * 0.5;
         const blur = Math.random() < blurChance
-          ? `blur(${(1 + tempo * 5).toFixed(1)}px)`
+          ? `blur(${(1 + tempo * 8).toFixed(1)}px)`
           : '';
 
+        // Спонтанное зеркало
+        const mirror = Math.random() < CONFIG.MIRROR_CHANCE ? -1 : 1;
+
+        // Спонтанный "вырванный" кадр — не на весь экран
+        let cropStyle = '';
+        if (Math.random() < CONFIG.CROP_CHANCE) {
+          const cw = 40 + Math.random() * 60;  // 40-100%
+          const ch = 40 + Math.random() * 60;
+          const cx = Math.random() * (100 - cw);
+          const cy = Math.random() * (100 - ch);
+          cropStyle = `clip-path: inset(${cy}% ${100 - cx - cw}% ${100 - cy - ch}% ${cx}%);`;
+          el.style.clipPath = cropStyle;
+        } else {
+          el.style.clipPath = '';
+        }
+
         el.style.transform =
-          `scale(${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
+          `scale(${scale * mirror}, ${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
         el.style.filter =
           `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) ${blur}`;
+
+        // Случайная инверсия
+        if (Math.random() < 0.12) {
+          el.style.filter += ' invert(1)';
+        }
       }
       el.style.opacity = '1';
       el.style.zIndex = '10';
     } else {
       el.style.opacity = '0';
       el.style.zIndex = '1';
+      el.style.clipPath = '';
     }
   });
 }
@@ -1242,8 +1313,8 @@ function animate(now) {
           const el = layer.canvas;
           const pulseScale = 1 + beatPulse * 0.12 + bassEnergy * 0.08;
           el.style.transform = el.style.transform.replace(
-            /scale\([\d.]+\)/,
-            `scale(${pulseScale})`
+            /scale\(([\d.]+)(?:,\s*[\d.]+)?\)/,
+            (m, s) => `scale(${s * pulseScale}, ${s * pulseScale})`
           );
         }
       }
@@ -1273,10 +1344,18 @@ function scheduleFlicker() {
   const delay = nextFlickerDelay * (0.7 + Math.random() * jitter * 0.6);
 
   flickerTimer = setTimeout(() => {
-    const switchChance = 0.4 + tempoNorm * 0.55;
+    // Более высокий шанс переключения
+    const switchChance = 0.55 + tempoNorm * 0.4;
 
     if (Math.random() < switchChance) {
       switchRandomLayer();
+
+      // Двойное переключение → ещё больше хаоса
+      if (Math.random() < CONFIG.DOUBLE_SWITCH_CHANCE) {
+        setTimeout(() => {
+          if (isPlaying && !isPaused) switchRandomLayer();
+        }, 30 + Math.random() * 80);
+      }
     } else {
       const active = layers.find(l => l.canvas.style.opacity === '1');
       if (active) {
@@ -1294,6 +1373,7 @@ function scheduleFlicker() {
 function stopChaos() {
   if (flickerTimer) { clearTimeout(flickerTimer); flickerTimer = null; }
   if (animationFrame) { cancelAnimationFrame(animationFrame); animationFrame = null; }
+  if (glitchTimer) { clearTimeout(glitchTimer); glitchTimer = null; }
 }
 
 /* ============================================================
@@ -1453,7 +1533,11 @@ stage.addEventListener('click', (e) => {
   lastTapTime = now;
 
   tapTimer = setTimeout(() => {
+    // Тап = двойной хаос-переход
     switchRandomLayer();
+    if (Math.random() < 0.5) {
+      setTimeout(() => switchRandomLayer(), 50);
+    }
     tapTimer = null;
   }, 300);
 });
