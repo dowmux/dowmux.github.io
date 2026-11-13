@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chaotic Video Player — Tempo Driven</title>
+<title>Chaotic Video Player — Bright Chaos</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -23,6 +23,27 @@
     cursor: pointer;
   }
 
+  /* ====== ПОДСЛОЙ: постоянный яркий градиент ======
+     Гарантирует, что даже если активный слой "дышит"
+     или меняется — за ним всегда цвет, а не чёрное. */
+  #brightBase {
+    position: fixed; inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse at 20% 30%, #ff2d95 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 20%, #00e5ff 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 85%, #b400ff 0%, transparent 60%),
+      linear-gradient(135deg, #140033 0%, #001a33 50%, #33001a 100%);
+    background-size: 200% 200%, 200% 200%, 200% 200%, 100% 100%;
+    animation: brightShift 18s ease-in-out infinite;
+    filter: saturate(1.4) brightness(1.15);
+  }
+  @keyframes brightShift {
+    0%, 100% { background-position: 0% 0%, 100% 0%, 50% 100%, 0 0; }
+    33%      { background-position: 100% 50%, 0% 50%, 50% 0%, 0 0; }
+    66%      { background-position: 50% 100%, 50% 100%, 0% 50%, 0 0; }
+  }
+
   .video-layer {
     position: absolute;
     top: 0; left: 0;
@@ -32,6 +53,7 @@
     pointer-events: none;
     will-change: transform, opacity, filter;
     image-rendering: auto;
+    z-index: 1;
   }
 
   .video-layer.pixelated {
@@ -39,12 +61,12 @@
     image-rendering: crisp-edges;
   }
 
-  /* ====== SPECTRUM — полоса по низу экрана ====== */
+  /* ====== SPECTRUM — полоса по низу ====== */
   #spectrumWrap {
     position: fixed;
     left: 0; right: 0; bottom: 0;
     width: 100vw;
-    height: 180px;         /* ← снова низкая полоса */
+    height: 180px;
     z-index: 800;
     pointer-events: none;
     opacity: 0;
@@ -114,7 +136,7 @@
     position: fixed;
     top: 20px; left: 50%;
     transform: translateX(-50%);
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.55);
     font-size: 11px;
     letter-spacing: 1.5px;
     z-index: 1500;
@@ -153,7 +175,7 @@
   /* ====== CROSSBAR — над спектром ====== */
   #progressWrap {
     position: fixed;
-    bottom: 180px; left: 0;   /* сразу над спектром */
+    bottom: 180px; left: 0;
     width: 100%;
     height: 44px;
     z-index: 1600;
@@ -176,7 +198,7 @@
   #progressBar {
     flex: 1;
     height: 4px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
     border-radius: 2px;
     position: relative;
     cursor: pointer;
@@ -193,7 +215,7 @@
   }
 
   #timeLabel {
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.75);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
     min-width: 90px;
@@ -203,7 +225,7 @@
   #nextBtn {
     width: 32px; height: 32px;
     border-radius: 50%;
-    border: 1.5px solid rgba(255,255,255,0.5);
+    border: 1.5px solid rgba(255,255,255,0.6);
     background: rgba(0,0,0,0.4);
     color: #fff;
     cursor: pointer;
@@ -212,7 +234,7 @@
     flex-shrink: 0;
   }
   #nextBtn:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
     border-color: #fff;
     transform: scale(1.1);
   }
@@ -220,7 +242,7 @@
 
   #pauseOverlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.35);
     backdrop-filter: blur(4px);
     z-index: 1800;
     display: none;
@@ -244,24 +266,33 @@
     position: fixed; inset: 0;
     background: #fff;
     opacity: 0;
-    z-index: 700;
+    z-index: 750;
     pointer-events: none;
     mix-blend-mode: overlay;
     transition: opacity 0.06s ease-out;
   }
 
-  /* ====== ХАОС-ВСПЫШКА: цветной глитч поверх ====== */
   #chaosFlash {
     position: fixed; inset: 0;
     opacity: 0;
-    z-index: 750;
+    z-index: 760;
     pointer-events: none;
     mix-blend-mode: color-dodge;
     transition: opacity 0.1s ease-out;
   }
 
+  /* Постоянная лёгкая вуаль свечения — «нет чёрных зон» */
+  #glowVeil {
+    position: fixed; inset: 0;
+    z-index: 770;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    background: radial-gradient(ellipse at center, rgba(255,255,255,0.08), transparent 70%);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #playBtn { animation: none; }
+    #brightBase { animation: none; }
     .video-layer { transition: opacity 0.5s ease !important; }
     #beatFlash, #chaosFlash { display: none; }
   }
@@ -269,10 +300,13 @@
 </head>
 <body>
 
+<div id="brightBase"></div>
+
 <div id="stage"></div>
 
 <div id="beatFlash"></div>
 <div id="chaosFlash"></div>
+<div id="glowVeil"></div>
 
 <div id="spectrumWrap">
   <canvas id="spectrumCanvas"></canvas>
@@ -309,13 +343,11 @@
    КОНФИГУРАЦИЯ
    ============================================================ */
 const CONFIG = {
-  // Больше слоёв → больше хаоса при переключении
   LAYER_COUNT: 12,
   MAX_FPS: 60,
   REDUCED_MOTION: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 
   SPECTRUM_BARS: 128,
-  // Высота полосы спектра внизу экрана
   SPECTRUM_HEIGHT_PX: 180,
 
   TREBLE_BOOST_DB: 12,
@@ -323,23 +355,24 @@ const CONFIG = {
 
   BPM_MIN: 60,
   BPM_MAX: 160,
-  // Более узкие интервалы → чаще смена даже на медленном
   FLICKER_SLOW: [400, 900],
   FLICKER_FAST: [40, 100],
 
   STATUS_HIDE_DELAY: 2500,
 
-  // === ХАОС ===
-  // Шанс "двойного" переключения (два слоя подряд за один тик)
+  // === ХАОС (crop убран — чёрные вырезы исключены) ===
   DOUBLE_SWITCH_CHANCE: 0.35,
-  // Шанс сбросить палитру на случайную при переключении (даже если задана вручную)
   PALETTE_JUMP_CHANCE: 0.15,
-  // Шанс спонтанного "глитч-кадра" (инверсия + hue-rotate поверх)
   GLITCH_CHANCE: 0.08,
-  // Шанс спонтанного зеркала (scaleX/-1)
   MIRROR_CHANCE: 0.2,
-  // Шанс "вырванного" кадра — canvas уменьшается/смещается, вокруг чёрное
-  CROP_CHANCE: 0.18,
+
+  // Минимальный/максимальный масштаб — не позволяем слою
+  // стать меньше экрана и обнажить фон
+  MIN_SCALE: 1.0,
+  MAX_SCALE: 1.5,
+
+  // Верхняя граница blur — слишком сильный blur "гасит" яркость
+  MAX_BLUR_PX: 4,
 
   PALETTES: [
     ['#ff004c', '#001eff', '#00fff0'],
@@ -419,7 +452,6 @@ let flickerTimer = null;
 let animationFrame = null;
 let lastFrameTime = 0;
 let activePaletteIndex = -1;
-let glitchTimer = null;
 
 let audioCtx = null;
 let analyser = null;
@@ -665,7 +697,7 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
-   SPECTRUM — низкая полоса внизу
+   SPECTRUM
    ============================================================ */
 function resizeSpectrum() {
   const dpr = window.devicePixelRatio || 1;
@@ -689,7 +721,6 @@ function drawSpectrum() {
   const barWidth = W / bars;
   const gap = Math.max(1, barWidth * 0.15);
 
-  // Чуть больше хаоса в спектре: бары "дышат" от темпа
   const heightChaos = 1 + tempoNorm * 0.3;
 
   for (let i = 0; i < bars; i++) {
@@ -834,14 +865,14 @@ function drawScene(ctx, canvas, state, now) {
     case 8: drawImage(ctx, W, H, state, time, pal); break;
   }
 
-  // Больше глитч-полос — хаос растёт с highEnergy и темпом
+  // Глитч-полосы (screen — только добавляют яркость)
   if (Math.random() < 0.2 + highEnergy * 0.6 + tempoNorm * 0.2) {
     ctx.globalCompositeOperation = 'screen';
     const n = 1 + Math.floor(highEnergy * 6 + tempoNorm * 3);
     for (let i = 0; i < n; i++) {
       const gx = Math.random() * W;
       const gy = Math.random() * H;
-      ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 50%, ${0.15 + highEnergy * 0.5})`;
+      ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 60%, ${0.2 + highEnergy * 0.5})`;
       ctx.fillRect(gx, gy, Math.random() * 300 + 50, Math.random() * 12 + 2);
     }
     ctx.globalCompositeOperation = 'source-over';
@@ -850,15 +881,22 @@ function drawScene(ctx, canvas, state, now) {
   ctx.restore();
 }
 
+/* 8. ИНТЕРНЕТ-КАРТИНКА — всегда на весь экран */
 function drawImage(ctx, W, H, state, time, pal) {
   const img = imageCache.get(state.imgUrl);
   if (!img) {
-    ctx.fillStyle = pal[0];
+    // Fallback: яркий градиент из палитры (без чёрного)
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, pal[0]);
+    g.addColorStop(0.5, pal[1]);
+    g.addColorStop(1, pal[2]);
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
     return;
   }
 
-  const zoom = 1.05 + beatPulse * 0.15 + bassEnergy * 0.2 + highPulse * 0.08 + tempoNorm * 0.05;
+  // Увеличенный zoom — картинка всегда покрывает экран с запасом
+  const zoom = 1.15 + beatPulse * 0.15 + bassEnergy * 0.2 + highPulse * 0.08 + tempoNorm * 0.05;
   const rot = (time * (0.05 + tempoNorm * 0.15) + state.seed) % (Math.PI * 2);
   const shakeAmt = (beatPulse + highPulse) * (10 + tempoNorm * 15);
   const shakeX = (Math.random() - 0.5) * shakeAmt;
@@ -871,23 +909,26 @@ function drawImage(ctx, W, H, state, time, pal) {
 
   const hue = (state.hueShift + time * 30 + bassEnergy * 90 + tempoNorm * 120) % 360;
 
-  ctx.globalAlpha = 0.85;
-  ctx.drawImage(img, -W / 2, -H / 2, W, H);
+  // Умножаем на 1.2, чтобы при любом зуме/повороте не было пустых краёв
+  const dw = W * 1.2;
+  const dh = H * 1.2;
 
-  ctx.globalCompositeOperation = state.imgBlend === 0 ? 'overlay'
-    : state.imgBlend === 1 ? 'screen' : 'multiply';
-  ctx.globalAlpha = 0.3 + beatPulse * 0.3 + tempoNorm * 0.15;
-  ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.6)`;
-  ctx.fillRect(-W / 2, -H / 2, W, H);
+  ctx.globalAlpha = 0.9;
+  ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+
+  // Яркий цветовой оверлей (screen — не затемняет)
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.25 + beatPulse * 0.25 + tempoNorm * 0.15;
+  ctx.fillStyle = `hsla(${hue}, 100%, 55%, 0.6)`;
+  ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
 
   if (beatPulse > 0.3 || highPulse > 0.3) {
-    ctx.globalCompositeOperation = 'screen';
     ctx.globalAlpha = Math.max(beatPulse, highPulse) * 0.4;
     const split = 8 * beatPulse * (1 + tempoNorm);
-    ctx.drawImage(img, -W / 2 + split, -H / 2, W, H);
+    ctx.drawImage(img, -dw / 2 + split, -dh / 2, dw, dh);
     ctx.fillStyle = '#00ffff';
     ctx.globalAlpha = highPulse * 0.3;
-    ctx.fillRect(-W / 2, -H / 2, W, H);
+    ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
   }
 
   ctx.restore();
@@ -899,10 +940,11 @@ function drawNoise(ctx, W, H, state, time, pal) {
   const hueBase = state.hueShift + time * 60 + bassEnergy * 180;
   const highBoost = 1 + highEnergy * 0.8;
   for (let i = 0; i < d.length; i += 4) {
-    const v = Math.random() * 255 * highBoost;
+    // Яркий шум: все каналы высокие, без чёрных провалов
+    const v = 120 + Math.random() * 135 * highBoost;
     d[i]     = (v + hueBase) % 255;
-    d[i + 1] = (v * 0.5 + 128 + midEnergy * 100) % 255;
-    d[i + 2] = (255 - v * 0.7) % 255;
+    d[i + 1] = (v * 0.7 + 100 + midEnergy * 100) % 255;
+    d[i + 2] = (255 - v * 0.4) % 255;
     d[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
@@ -923,11 +965,14 @@ function drawStripes(ctx, W, H, state, time, pal) {
     ctx.fillRect(x + stripeW, 0, stripeW, H);
   }
   ctx.restore();
+  // screen-градиент — только светлее
+  ctx.globalCompositeOperation = 'screen';
   const g = ctx.createLinearGradient(0, 0, W, H);
-  g.addColorStop(0, `rgba(0,0,0,${0.5 - bassEnergy * 0.3})`);
-  g.addColorStop(1, `rgba(255,255,255,${0.2 + midEnergy * 0.3 + highPulse * 0.2})`);
+  g.addColorStop(0, `rgba(255,255,255,${0.05 + midEnergy * 0.15})`);
+  g.addColorStop(1, `rgba(255,255,255,${0.15 + midEnergy * 0.3 + highPulse * 0.2})`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 function drawRings(ctx, W, H, state, time, pal, beat) {
@@ -937,14 +982,14 @@ function drawRings(ctx, W, H, state, time, pal, beat) {
   const cx = W / 2 + Math.sin(time * 3 * speedMul + state.seed) * W * 0.3;
   const cy = H / 2 + Math.cos(time * 2.5 * speedMul + state.seed) * H * 0.3;
   const maxR = Math.hypot(W, H);
-  const n = 12 + Math.floor(bassEnergy * 20);
+  const n = 20 + Math.floor(bassEnergy * 20);
   for (let i = 0; i < n; i++) {
     const r = ((time * 80 * speedMul * (1 + bassEnergy * 2 + beat * 0.5) + i * 60 + state.seed * 50) % maxR);
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.strokeStyle = pal[i % pal.length];
-    ctx.lineWidth = 15 + Math.sin(time + i) * 10 + bassEnergy * 20 + beat * 15;
-    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 18 + Math.sin(time + i) * 12 + bassEnergy * 25 + beat * 15;
+    ctx.globalAlpha = 0.75;
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
@@ -956,24 +1001,35 @@ function drawBlocks(ctx, W, H, state, time, pal) {
   const cellW = 80, cellH = 60;
   const cols = Math.ceil(W / cellW), rows = Math.ceil(H / cellH);
   const speedMul = 1 + tempoNorm * 2;
+  // Рисуем ВСЕГДА цветные блоки, независимо от порога — фон не пустует
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const n = Math.sin(x * 0.7 + time * 3 * speedMul + state.seed) *
                 Math.cos(y * 0.5 + time * 2 * speedMul);
-      if (n > 0.2 - bassEnergy * 0.4 - beatPulse * 0.3) {
-        ctx.fillStyle = pal[(x + y) % pal.length];
-        const shiftAmt = 20 + bassEnergy * 60;
-        const shiftX = Math.sin(time * 5 * speedMul + y) * shiftAmt;
-        const shiftY = Math.cos(time * 4 * speedMul + x) * shiftAmt;
-        ctx.fillRect(x * cellW + shiftX, y * cellH + shiftY, cellW - 4, cellH - 4);
-      }
+      const show = n > 0.2 - bassEnergy * 0.4 - beatPulse * 0.3;
+      ctx.fillStyle = show
+        ? pal[(x + y) % pal.length]
+        : pal[(x * 2 + y) % pal.length];
+      ctx.globalAlpha = show ? 1 : 0.6;
+      const shiftAmt = 20 + bassEnergy * 60;
+      const shiftX = Math.sin(time * 5 * speedMul + y) * shiftAmt;
+      const shiftY = Math.cos(time * 4 * speedMul + x) * shiftAmt;
+      ctx.fillRect(x * cellW + shiftX, y * cellH + shiftY, cellW - 4, cellH - 4);
     }
   }
+  ctx.globalAlpha = 1;
 }
 
+/* 4. ТУННЕЛЬ — без чёрного фона, с ярким градиентом */
 function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
   const cx = W / 2, cy = H / 2;
-  ctx.fillStyle = '#000';
+
+  // Яркий радиальный фон из палитры вместо чёрного
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.6);
+  bgGrad.addColorStop(0, pal[1]);
+  bgGrad.addColorStop(0.5, pal[0]);
+  bgGrad.addColorStop(1, pal[2]);
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
   const rings = 35;
@@ -986,23 +1042,24 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
     const r = progress * Math.hypot(W, H) * 0.75;
     const thickness = (4 + (1 - progress) * 18) * (1 + beat * 0.4);
     const hue = (hueBase + i * 18 + time * 60) % 360;
-    const lightness = 45 + bass * 35 + beat * 15 + highEnergy * 20;
+    const lightness = 55 + bass * 30 + beat * 15 + highEnergy * 20;
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = `hsla(${hue}, 100%, ${Math.min(85, lightness)}%, ${0.85 - progress * 0.7})`;
+    ctx.strokeStyle = `hsla(${hue}, 100%, ${Math.min(90, lightness)}%, ${0.85 - progress * 0.6})`;
     ctx.lineWidth = thickness;
     ctx.stroke();
 
     if (beat > 0.4 && i % 3 === 0) {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = `hsla(${hue}, 100%, 80%, ${(0.6 - progress * 0.5) * beat})`;
+      ctx.strokeStyle = `hsla(${hue}, 100%, 85%, ${(0.6 - progress * 0.5) * beat})`;
       ctx.lineWidth = thickness * 3;
       ctx.stroke();
     }
   }
 
+  // Лучи
   ctx.save();
   ctx.translate(cx, cy);
   const rays = 16;
@@ -1013,25 +1070,26 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
-    ctx.strokeStyle = `hsla(${(i * 25 + state.hueShift) % 360}, 100%, 60%, ${0.08 + midEnergy * 0.2 + beat * 0.15 + highPulse * 0.1})`;
+    ctx.strokeStyle = `hsla(${(i * 25 + state.hueShift) % 360}, 100%, 65%, ${0.12 + midEnergy * 0.25 + beat * 0.15 + highPulse * 0.1})`;
     ctx.lineWidth = 2 + midEnergy * 8 + beat * 6 + highPulse * 3;
     ctx.stroke();
   }
   ctx.restore();
 
-  if (beat > 0.1 || highPulse > 0.2) {
-    const glow = Math.max(beat, highPulse);
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 150 * glow);
-    grad.addColorStop(0, `hsla(${(hueBase + 180) % 360}, 100%, 70%, ${glow * 0.6})`);
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-  }
+  // Центральное свечение
+  const glow = Math.max(0.25, beat, highPulse);
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 180 * glow);
+  grad.addColorStop(0, `hsla(${(hueBase + 180) % 360}, 100%, 80%, ${glow * 0.7})`);
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
 }
 
+/* 5. VHS — яркий градиент, без чёрных зон */
 function drawVHS(ctx, W, H, state, time, pal) {
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, pal[0]);
+  g.addColorStop(0.5, pal[1]);
   g.addColorStop(1, pal[2]);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
@@ -1043,9 +1101,9 @@ function drawVHS(ctx, W, H, state, time, pal) {
     const h = 1 + Math.random() * 8;
     const shift = (Math.random() - 0.5) * 80 * speedMul * (1 + bassEnergy * 2);
     ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = `hsla(${Math.random() * 60 + 180}, 100%, 60%, ${0.3 + Math.random() * 0.4})`;
+    ctx.fillStyle = `hsla(${Math.random() * 60 + 180}, 100%, 65%, ${0.35 + Math.random() * 0.4})`;
     ctx.fillRect(shift, y, W, h);
-    ctx.fillStyle = `hsla(${Math.random() * 60 + 300}, 100%, 60%, ${0.3 + Math.random() * 0.4})`;
+    ctx.fillStyle = `hsla(${Math.random() * 60 + 300}, 100%, 65%, ${0.35 + Math.random() * 0.4})`;
     ctx.fillRect(-shift, y, W, h);
   }
   ctx.globalCompositeOperation = 'source-over';
@@ -1054,7 +1112,8 @@ function drawVHS(ctx, W, H, state, time, pal) {
   for (let i = 0; i < dots; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H;
-    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+    // Только светлые точки — без чёрного шума
+    ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.5})`;
     ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 3);
   }
 
@@ -1068,7 +1127,8 @@ function drawVHS(ctx, W, H, state, time, pal) {
     } catch (e) { /* ignore */ }
   }
 
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  // Очень лёгкий scanline-эффект (полупрозрачный, не чёрный)
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
   for (let y = 0; y < H; y += 4) {
     ctx.fillRect(0, y, W, 1);
   }
@@ -1094,7 +1154,8 @@ function drawPlasma(ctx, W, H, state, time, pal) {
                 Math.sin(Math.hypot(x - pw / 2, y - ph / 2) * 0.15 - t * 1.5) * amp;
       const idx = (y * pw + x) * 4;
       const hue = ((v + 4) / 8) * 360;
-      const [r, g, b] = hslToRgb(hue / 360, 0.9, 0.5);
+      // Светлее: lightness 0.6 вместо 0.5 — нет тёмных участков
+      const [r, g, b] = hslToRgb(hue / 360, 0.95, 0.6);
       d[idx] = r; d[idx + 1] = g; d[idx + 2] = b; d[idx + 3] = 255;
     }
   }
@@ -1138,10 +1199,11 @@ function drawVoronoi(ctx, W, H, state, time, pal) {
       }
       const col = paletteRgb[nearest % paletteRgb.length];
       const idx = (y * pw + x) * 4;
-      const edge = minDist < 0.0008 ? 0.3 : 1;
-      d[idx] = col[0] * edge;
-      d[idx + 1] = col[1] * edge;
-      d[idx + 2] = col[2] * edge;
+      // Рёбра — не чёрные, а светлее (blend к белому)
+      const edge = minDist < 0.0008 ? 0.6 : 1;
+      d[idx] = col[0] + (255 - col[0]) * (1 - edge);
+      d[idx + 1] = col[1] + (255 - col[1]) * (1 - edge);
+      d[idx + 2] = col[2] + (255 - col[2]) * (1 - edge);
       d[idx + 3] = 255;
     }
   }
@@ -1184,32 +1246,30 @@ function hexToRgb(hex) {
 }
 
 /* ============================================================
-   ХАОС-ВСПЫШКА (глитч поверх всего)
+   ХАОС-ВСПЫШКА
    ============================================================ */
 function triggerChaosFlash() {
   if (CONFIG.REDUCED_MOTION) return;
   const hue = Math.random() * 360;
   chaosFlash.style.background = `linear-gradient(${Math.random()*360}deg,
-    hsla(${hue}, 100%, 50%, 0.35),
-    hsla(${(hue + 120) % 360}, 100%, 50%, 0.25))`;
+    hsla(${hue}, 100%, 65%, 0.35),
+    hsla(${(hue + 120) % 360}, 100%, 65%, 0.25))`;
   chaosFlash.style.opacity = '1';
   setTimeout(() => { chaosFlash.style.opacity = '0'; }, 60 + Math.random() * 100);
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — больше хаоса
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — БЕЗ ЧЁРНЫХ ВЫРЕЗОВ
    ============================================================ */
 function switchRandomLayer() {
   const idx = Math.floor(Math.random() * layers.length);
   const reduce = CONFIG.REDUCED_MOTION;
   const tempo = tempoNorm;
 
-  // Случайный сброс палитры — внезапные "прыжки" цвета
   if (Math.random() < CONFIG.PALETTE_JUMP_CHANCE) {
     activePaletteIndex = -1;
   }
 
-  // Случайная хаос-вспышка
   if (Math.random() < CONFIG.GLITCH_CHANCE * (0.5 + tempo)) {
     triggerChaosFlash();
   }
@@ -1238,54 +1298,42 @@ function switchRandomLayer() {
         el.style.transform = 'none';
         el.style.filter = 'none';
       } else {
-        // Усиленные амплитуды трансформаций
-        const scaleAmp = 0.25 + tempo * 0.9;
-        const rotateAmp = 4 + tempo * 22;
-        const skewAmp = 2 + tempo * 18;
-        const transAmp = 5 + tempo * 35;
-        const blurChance = 0.08 + tempo * 0.35;
+        // Масштаб ВСЕГДА >= 1 → слой не меньше экрана → нет чёрных краёв
+        const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
+        const rotate = (Math.random() - 0.5) * (4 + tempo * 22);
+        const skewX = (Math.random() - 0.5) * (2 + tempo * 18);
+        const skewY = (Math.random() - 0.5) * (2 + tempo * 18);
 
-        const scale = Math.max(0.4, 1 - scaleAmp / 2 + Math.random() * scaleAmp);
-        const rotate = (Math.random() - 0.5) * rotateAmp;
-        const skewX = (Math.random() - 0.5) * skewAmp;
-        const skewY = (Math.random() - 0.5) * skewAmp;
-        const tx = (Math.random() - 0.5) * transAmp;
-        const ty = (Math.random() - 0.5) * transAmp;
+        // Смещение ограничено так, чтобы при масштабе >= 1
+        // слой всё равно покрывал экран (приблизительно)
+        const maxShift = (scale - 1) * 50;
+        const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 35, maxShift);
+        const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 35, maxShift);
+
         const hue = Math.random() * 360;
-        const sat = 0.7 + Math.random() * 1.0 + tempo * 0.6;
-        const con = 0.9 + Math.random() * 0.8 + tempo * 0.5;
-        const blur = Math.random() < blurChance
-          ? `blur(${(1 + tempo * 8).toFixed(1)}px)`
-          : '';
+        const sat = 1.0 + Math.random() * 0.8 + tempo * 0.6;   // >= 1 → не блёкнет
+        const con = 1.0 + Math.random() * 0.6 + tempo * 0.5;   // >= 1 → не темнеет
+        const bright = 1.0 + Math.random() * 0.3 + tempo * 0.2; // >= 1 → не темнеет
 
-        // Спонтанное зеркало
+        // Blur ограничен, чтобы не "гасил" картинку
+        let blur = '';
+        if (Math.random() < 0.08 + tempo * 0.2) {
+          blur = `blur(${Math.min(CONFIG.MAX_BLUR_PX, 1 + tempo * 4).toFixed(1)}px)`;
+        }
+
         const mirror = Math.random() < CONFIG.MIRROR_CHANCE ? -1 : 1;
 
-        // Спонтанный "вырванный" кадр — не на весь экран
-        let cropStyle = '';
-        if (Math.random() < CONFIG.CROP_CHANCE) {
-          const cw = 40 + Math.random() * 60;  // 40-100%
-          const ch = 40 + Math.random() * 60;
-          const cx = Math.random() * (100 - cw);
-          const cy = Math.random() * (100 - ch);
-          cropStyle = `clip-path: inset(${cy}% ${100 - cx - cw}% ${100 - cy - ch}% ${cx}%);`;
-          el.style.clipPath = cropStyle;
-        } else {
-          el.style.clipPath = '';
-        }
+        // НИКАКОГО clip-path / crop — всегда на весь экран
+        el.style.clipPath = '';
 
         el.style.transform =
           `scale(${scale * mirror}, ${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
+        // filter: без invert (он делал тёмные зоны), brightness >= 1
         el.style.filter =
-          `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) ${blur}`;
-
-        // Случайная инверсия
-        if (Math.random() < 0.12) {
-          el.style.filter += ' invert(1)';
-        }
+          `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) brightness(${bright}) ${blur}`;
       }
       el.style.opacity = '1';
-      el.style.zIndex = '10';
+      el.style.zIndex = '1';
     } else {
       el.style.opacity = '0';
       el.style.zIndex = '1';
@@ -1311,10 +1359,15 @@ function animate(now) {
         layer.draw(layer.state, now);
         if (!CONFIG.REDUCED_MOTION && Math.random() < 0.04) {
           const el = layer.canvas;
-          const pulseScale = 1 + beatPulse * 0.12 + bassEnergy * 0.08;
+          // Пульсация только увеличивает scale, никогда не уменьшает ниже 1
+          const pulseScale = Math.max(CONFIG.MIN_SCALE, 1 + beatPulse * 0.12 + bassEnergy * 0.08);
           el.style.transform = el.style.transform.replace(
-            /scale\(([\d.]+)(?:,\s*[\d.]+)?\)/,
-            (m, s) => `scale(${s * pulseScale}, ${s * pulseScale})`
+            /scale\(([\d.]+)(?:,\s*([\d.]+))?\)/,
+            (m, sx, sy) => {
+              const s1 = Math.max(CONFIG.MIN_SCALE, parseFloat(sx) * pulseScale);
+              const s2 = Math.max(CONFIG.MIN_SCALE, parseFloat(sy || sx) * pulseScale);
+              return `scale(${s1}, ${s2})`;
+            }
           );
         }
       }
@@ -1344,13 +1397,11 @@ function scheduleFlicker() {
   const delay = nextFlickerDelay * (0.7 + Math.random() * jitter * 0.6);
 
   flickerTimer = setTimeout(() => {
-    // Более высокий шанс переключения
     const switchChance = 0.55 + tempoNorm * 0.4;
 
     if (Math.random() < switchChance) {
       switchRandomLayer();
 
-      // Двойное переключение → ещё больше хаоса
       if (Math.random() < CONFIG.DOUBLE_SWITCH_CHANCE) {
         setTimeout(() => {
           if (isPlaying && !isPaused) switchRandomLayer();
@@ -1373,7 +1424,6 @@ function scheduleFlicker() {
 function stopChaos() {
   if (flickerTimer) { clearTimeout(flickerTimer); flickerTimer = null; }
   if (animationFrame) { cancelAnimationFrame(animationFrame); animationFrame = null; }
-  if (glitchTimer) { clearTimeout(glitchTimer); glitchTimer = null; }
 }
 
 /* ============================================================
@@ -1421,7 +1471,7 @@ audio.addEventListener('error', (e) => {
 });
 
 /* ============================================================
-   ПОКАЗ/СКРЫТИЕ ЗНАЧКА ▶ И CROSSBAR
+   ПОКАЗ/СКРЫТИЕ
    ============================================================ */
 function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
   statusEl.classList.add('visible');
@@ -1431,22 +1481,12 @@ function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
   }, ms);
 }
 
-function hideStatus() {
-  statusEl.classList.remove('visible');
-  if (statusHideTimer) { clearTimeout(statusHideTimer); statusHideTimer = null; }
-}
-
 function showProgressTemporarily(ms = 2500) {
   progressWrap.classList.add('visible');
   if (progressHideTimer) clearTimeout(progressHideTimer);
   progressHideTimer = setTimeout(() => {
     progressWrap.classList.remove('visible');
   }, ms);
-}
-
-function hideProgress() {
-  progressWrap.classList.remove('visible');
-  if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
 }
 
 /* ============================================================
@@ -1533,7 +1573,6 @@ stage.addEventListener('click', (e) => {
   lastTapTime = now;
 
   tapTimer = setTimeout(() => {
-    // Тап = двойной хаос-переход
     switchRandomLayer();
     if (Math.random() < 0.5) {
       setTimeout(() => switchRandomLayer(), 50);
