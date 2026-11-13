@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Русские субтитры — лента снизу вверх</title>
+    <title>Русские субтитры — на весь экран</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
             --controls-height: 84px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
             --font-size: 26px;
         }
 
@@ -24,21 +25,21 @@
             overscroll-behavior: none;
         }
 
-        /* Окно субтитров: прижато к низу, но выше панели кнопок */
+        /* Окно субтитров: почти на весь экран */
         #subtitles-window {
             position: fixed;
             left: 0;
             right: 0;
-            bottom: calc(var(--controls-height) + var(--safe-bottom) + 8px);
-            height: 34vh;
+            top: calc(28px + var(--safe-top));
+            bottom: calc(var(--controls-height) + var(--safe-bottom) + 4px);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
             padding: 12px 16px 8px;
-            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 35%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
-            mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+            /* лёгкий градиент сверху, чтобы верхние строки плавно таяли */
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 12%);
             pointer-events: none;
         }
 
@@ -70,7 +71,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Панель управления: три кнопки */
+        /* Панель управления */
         .controls {
             position: fixed;
             left: 0;
@@ -103,24 +104,21 @@
 
         #startBtn { background: #007aff; }
         #stopBtn  { background: #ff3b30; display: none; }
-        /* Очистить — второстепенная, серая */
         #clearBtn { background: #3a3a3c; flex: 0.8 1 0; }
 
-        /* Статус сверху */
         #status {
             position: fixed;
-            top: calc(8px + env(safe-area-inset-top, 0px));
+            top: calc(4px + var(--safe-top));
             left: 0;
             right: 0;
-            font-size: 13px;
-            color: #888;
+            font-size: 12px;
+            color: #777;
             text-align: center;
             padding: 0 16px;
             z-index: 5;
             pointer-events: none;
         }
 
-        /* Скрытый элемент для измерения ширины текста */
         #measure {
             position: absolute;
             visibility: hidden;
@@ -132,19 +130,17 @@
             top: 0;
         }
 
-        /* Горизонтальная ориентация */
         @media (orientation: landscape) {
             :root {
                 --controls-height: 70px;
                 --font-size: 30px;
             }
-            #subtitles-window { height: 42vh; }
             button { font-size: 15px; padding: 11px 0; }
         }
 
-        /* Очень узкие экраны */
         @media (max-width: 360px) {
             button { font-size: 13px; }
+            :root { --font-size: 23px; }
         }
     </style>
 </head>
@@ -177,7 +173,13 @@
             let recognition = null;
             let isListening = false;
 
-            const MAX_LINES = 3;
+            // --- Дедупликация ---
+            // Храним все уже добавленные слова, чтобы не повторять их
+            let addedWords = [];          // массив строк (для контекста)
+            let addedWordsSet = new Set(); // для быстрой проверки
+
+            // Сколько строк максимум держим в DOM (на весь экран — можно больше)
+            const MAX_LINES = 8;
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -214,10 +216,61 @@
                 linesEl.style.transform = overflow > 0 ? `translateY(-${overflow}px)` : 'translateY(0)';
             }
 
-            function appendText(text) {
-                text = text.trim();
-                if (!text) return;
+            // --- Ключевая функция: фильтрация повторов ---
+            // Web Speech API возвращает "накопительный" transcript в каждом событии,
+            // поэтому мы берём только те слова, которых ещё не было в конце нашей истории.
+            function extractNewWords(transcript) {
+                const incoming = transcript
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[.,!?;:—–]/g, '')   // убираем пунктуацию для сравнения
+                    .split(/\s+/)
+                    .filter(Boolean);
 
+                if (incoming.length === 0) return [];
+
+                // Ищем, с какого места incoming совпадает с "хвостом" уже добавленных слов.
+                // Это защищает от повторов типа: было "привет как дела",
+                // пришло "привет как дела хорошо" -> добавим только "хорошо".
+                const tailLen = Math.min(incoming.length, addedWords.length);
+                let overlap = 0;
+
+                for (let len = tailLen; len > 0; len--) {
+                    const tail = addedWords.slice(-len).map(w => w.toLowerCase().replace(/[.,!?;:—–]/g, ''));
+                    const head = incoming.slice(0, len);
+                    let match = true;
+                    for (let i = 0; i < len; i++) {
+                        if (tail[i] !== head[i]) { match = false; break; }
+                    }
+                    if (match) { overlap = len; break; }
+                }
+
+                // Новые слова — всё, что после найденного перекрытия
+                let newWords = incoming.slice(overlap);
+
+                // Дополнительная защита: убираем слова, которые уже были в последних 30 словах
+                const recentSet = new Set(addedWords.slice(-30).map(w => w.toLowerCase().replace(/[.,!?;:—–]/g, '')));
+                newWords = newWords.filter(w => !recentSet.has(w));
+
+                return newWords;
+            }
+
+            function appendWords(newWords) {
+                if (!newWords.length) return;
+
+                // Сохраняем в историю
+                for (const w of newWords) {
+                    addedWords.push(w);
+                    addedWordsSet.add(w.toLowerCase());
+                }
+                // Ограничиваем историю, чтобы не росла бесконечно
+                if (addedWords.length > 500) {
+                    addedWords = addedWords.slice(-300);
+                    addedWordsSet = new Set(addedWords.map(w => w.toLowerCase()));
+                }
+
+                // Формируем текст для отображения
+                const text = newWords.join(' ');
                 const lines = wrapText(text, getMaxTextWidth());
 
                 for (const lineText of lines) {
@@ -234,10 +287,11 @@
                 requestAnimationFrame(scrollToBottom);
             }
 
-            // Очистка ленты без остановки распознавания
             function clearLines() {
                 linesEl.innerHTML = '';
                 linesEl.style.transform = 'translateY(0)';
+                addedWords = [];
+                addedWordsSet = new Set();
             }
 
             recognition = new SpeechRecognition();
@@ -246,13 +300,17 @@
             recognition.interimResults = true;
 
             recognition.onresult = function(event) {
+                // Собираем ВЕСЬ финальный текст из текущего event
                 let finalText = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
-                        finalText += event.results[i][0].transcript;
+                        finalText += event.results[i][0].transcript + ' ';
                     }
                 }
-                if (finalText.trim()) appendText(finalText.trim());
+                if (finalText.trim()) {
+                    const newWords = extractNewWords(finalText);
+                    appendWords(newWords);
+                }
             };
 
             recognition.onerror = function(e) {
@@ -281,18 +339,29 @@
                 startBtn.style.display = 'block';
             });
 
-            // Кнопка «Очистить» — только текст, распознавание не трогаем
             clearBtn.addEventListener('click', function() {
                 clearLines();
-                statusEl.textContent = isListening
-                    ? 'Очищено — продолжаю слушать'
-                    : 'Очищено';
+                statusEl.textContent = isListening ? 'Очищено — продолжаю слушать' : 'Очищено';
             });
 
             window.addEventListener('orientationchange', function() {
-                const existing = Array.from(linesEl.children).map(el => el.textContent).join(' ');
+                // Пересобираем ленту из уже добавленных слов
+                const allText = addedWords.join(' ');
                 linesEl.innerHTML = '';
-                if (existing) appendText(existing);
+                if (allText) {
+                    // Добавляем без повторной дедупликации
+                    const lines = wrapText(allText, getMaxTextWidth());
+                    for (const lineText of lines) {
+                        const div = document.createElement('div');
+                        div.className = 'sub-line';
+                        div.textContent = lineText;
+                        linesEl.appendChild(div);
+                    }
+                    while (linesEl.children.length > MAX_LINES) {
+                        linesEl.removeChild(linesEl.firstChild);
+                    }
+                    requestAnimationFrame(scrollToBottom);
+                }
             });
 
             window.addEventListener('resize', function() {
