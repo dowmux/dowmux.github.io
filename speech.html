@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Русские субтитры — на весь экран</title>
+    <title>Русские субтитры — обычный режим и бегущая строка</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --controls-height: 84px;
+            --controls-height: 124px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --safe-top: env(safe-area-inset-top, 0px);
             --font-size: 26px;
@@ -25,7 +25,7 @@
             overscroll-behavior: none;
         }
 
-        /* Окно субтитров: почти на весь экран */
+        /* Окно субтитров */
         #subtitles-window {
             position: fixed;
             left: 0;
@@ -37,12 +37,12 @@
             flex-direction: column;
             justify-content: flex-end;
             padding: 12px 16px 8px;
-            /* лёгкий градиент сверху, чтобы верхние строки плавно таяли */
             -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%);
             mask-image: linear-gradient(to bottom, transparent 0%, black 12%);
             pointer-events: none;
         }
 
+        /* Обычный режим: вертикальная лента */
         #lines {
             display: flex;
             flex-direction: column;
@@ -71,40 +71,76 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Панель управления */
+        /* Режим бегущей строки: горизонтальная лента на весь экран */
+        #marquee-container {
+            display: none;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            align-self: center;
+        }
+
+        #marquee-container.active {
+            display: block;
+        }
+
+        #marquee-text {
+            display: inline-block;
+            font-size: var(--font-size);
+            line-height: 1.3;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.95);
+            padding-left: 0;
+            will-change: transform;
+        }
+
+        @keyframes marqueeScroll {
+            0%   { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* В режиме бегущей строки вертикальная лента скрыта */
+        body.marquee-mode #lines { display: none; }
+        body.marquee-mode #subtitles-window { justify-content: center; }
+
+        /* Панель управления: 4 кнопки в 2 ряда */
         .controls {
             position: fixed;
             left: 0;
             right: 0;
             bottom: 0;
             height: var(--controls-height);
-            padding: 10px 12px calc(10px + var(--safe-bottom));
-            display: flex;
+            padding: 8px 12px calc(8px + var(--safe-bottom));
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
             gap: 8px;
-            align-items: center;
-            justify-content: center;
             background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.6));
             z-index: 10;
         }
 
         button {
-            flex: 1 1 0;
-            padding: 13px 0;
             font-size: 15px;
             font-weight: 700;
             border: none;
             border-radius: 13px;
             color: #fff;
             cursor: pointer;
-            transition: opacity 0.15s, transform 0.1s;
+            transition: opacity 0.15s, transform 0.1s, background 0.15s;
             -webkit-tap-highlight-color: transparent;
             white-space: nowrap;
+            padding: 0 8px;
         }
         button:active { opacity: 0.75; transform: scale(0.97); }
 
-        #startBtn { background: #007aff; }
-        #stopBtn  { background: #ff3b30; display: none; }
-        #clearBtn { background: #3a3a3c; flex: 0.8 1 0; }
+        #startBtn { background: #007aff; grid-column: 1 / 2; grid-row: 1 / 2; }
+        #stopBtn  { background: #ff3b30; grid-column: 2 / 3; grid-row: 1 / 2; display: none; }
+        #clearBtn { background: #3a3a3c; grid-column: 3 / 4; grid-row: 1 / 2; }
+        /* Кнопка режима бегущей строки — на всю ширину второго ряда */
+        #marqueeBtn { background: #5856d6; grid-column: 1 / 4; grid-row: 2 / 3; }
+        #marqueeBtn.active { background: #34c759; }
 
         #status {
             position: fixed;
@@ -132,10 +168,10 @@
 
         @media (orientation: landscape) {
             :root {
-                --controls-height: 70px;
+                --controls-height: 104px;
                 --font-size: 30px;
             }
-            button { font-size: 15px; padding: 11px 0; }
+            button { font-size: 14px; }
         }
 
         @media (max-width: 360px) {
@@ -150,35 +186,41 @@
 
     <div id="subtitles-window">
         <div id="lines"></div>
+        <div id="marquee-container">
+            <span id="marquee-text"></span>
+        </div>
     </div>
 
     <div class="controls">
         <button id="startBtn">Начать</button>
         <button id="stopBtn">Остановить</button>
         <button id="clearBtn">Очистить</button>
+        <button id="marqueeBtn">Бегущая строка: выкл</button>
     </div>
 
     <span id="measure"></span>
 
     <script>
         (function() {
-            const statusEl   = document.getElementById('status');
-            const linesEl    = document.getElementById('lines');
-            const measureEl  = document.getElementById('measure');
-            const startBtn   = document.getElementById('startBtn');
-            const stopBtn    = document.getElementById('stopBtn');
-            const clearBtn   = document.getElementById('clearBtn');
-            const windowEl   = document.getElementById('subtitles-window');
+            const statusEl      = document.getElementById('status');
+            const linesEl       = document.getElementById('lines');
+            const marqueeCont   = document.getElementById('marquee-container');
+            const marqueeTextEl = document.getElementById('marquee-text');
+            const measureEl     = document.getElementById('measure');
+            const startBtn      = document.getElementById('startBtn');
+            const stopBtn       = document.getElementById('stopBtn');
+            const clearBtn      = document.getElementById('clearBtn');
+            const marqueeBtn    = document.getElementById('marqueeBtn');
+            const windowEl      = document.getElementById('subtitles-window');
 
             let recognition = null;
             let isListening = false;
 
-            // --- Дедупликация ---
-            // Храним все уже добавленные слова, чтобы не повторять их
-            let addedWords = [];          // массив строк (для контекста)
-            let addedWordsSet = new Set(); // для быстрой проверки
+            // Состояние
+            let marqueeMode = false;      // включён ли режим бегущей строки
+            let addedWords = [];          // все добавленные слова (для дедупликации)
+            let addedWordsSet = new Set();
 
-            // Сколько строк максимум держим в DOM (на весь экран — можно больше)
             const MAX_LINES = 8;
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -196,7 +238,6 @@
                 const words = text.split(/\s+/);
                 const lines = [];
                 let current = '';
-
                 for (const word of words) {
                     const test = current ? current + ' ' + word : word;
                     measureEl.textContent = test;
@@ -216,25 +257,19 @@
                 linesEl.style.transform = overflow > 0 ? `translateY(-${overflow}px)` : 'translateY(0)';
             }
 
-            // --- Ключевая функция: фильтрация повторов ---
-            // Web Speech API возвращает "накопительный" transcript в каждом событии,
-            // поэтому мы берём только те слова, которых ещё не было в конце нашей истории.
+            // --- Дедупликация ---
             function extractNewWords(transcript) {
                 const incoming = transcript
                     .trim()
                     .toLowerCase()
-                    .replace(/[.,!?;:—–]/g, '')   // убираем пунктуацию для сравнения
+                    .replace(/[.,!?;:—–]/g, '')
                     .split(/\s+/)
                     .filter(Boolean);
 
                 if (incoming.length === 0) return [];
 
-                // Ищем, с какого места incoming совпадает с "хвостом" уже добавленных слов.
-                // Это защищает от повторов типа: было "привет как дела",
-                // пришло "привет как дела хорошо" -> добавим только "хорошо".
                 const tailLen = Math.min(incoming.length, addedWords.length);
                 let overlap = 0;
-
                 for (let len = tailLen; len > 0; len--) {
                     const tail = addedWords.slice(-len).map(w => w.toLowerCase().replace(/[.,!?;:—–]/g, ''));
                     const head = incoming.slice(0, len);
@@ -245,53 +280,103 @@
                     if (match) { overlap = len; break; }
                 }
 
-                // Новые слова — всё, что после найденного перекрытия
                 let newWords = incoming.slice(overlap);
 
-                // Дополнительная защита: убираем слова, которые уже были в последних 30 словах
                 const recentSet = new Set(addedWords.slice(-30).map(w => w.toLowerCase().replace(/[.,!?;:—–]/g, '')));
                 newWords = newWords.filter(w => !recentSet.has(w));
-
                 return newWords;
             }
 
-            function appendWords(newWords) {
-                if (!newWords.length) return;
+            // --- Рендер обычного режима ---
+            function renderLines() {
+                linesEl.innerHTML = '';
+                const allText = addedWords.join(' ');
+                if (!allText) { linesEl.style.transform = 'translateY(0)'; return; }
 
-                // Сохраняем в историю
-                for (const w of newWords) {
-                    addedWords.push(w);
-                    addedWordsSet.add(w.toLowerCase());
-                }
-                // Ограничиваем историю, чтобы не росла бесконечно
-                if (addedWords.length > 500) {
-                    addedWords = addedWords.slice(-300);
-                    addedWordsSet = new Set(addedWords.map(w => w.toLowerCase()));
-                }
-
-                // Формируем текст для отображения
-                const text = newWords.join(' ');
-                const lines = wrapText(text, getMaxTextWidth());
-
+                const lines = wrapText(allText, getMaxTextWidth());
                 for (const lineText of lines) {
                     const div = document.createElement('div');
                     div.className = 'sub-line';
                     div.textContent = lineText;
                     linesEl.appendChild(div);
                 }
-
                 while (linesEl.children.length > MAX_LINES) {
                     linesEl.removeChild(linesEl.firstChild);
                 }
-
                 requestAnimationFrame(scrollToBottom);
+            }
+
+            // --- Рендер бегущей строки ---
+            function renderMarquee() {
+                const text = addedWords.join(' ');
+                if (!text) {
+                    marqueeTextEl.textContent = '';
+                    marqueeTextEl.style.animation = 'none';
+                    return;
+                }
+                marqueeTextEl.textContent = text;
+
+                // Скорость: примерно 8 символов в секунду (комфортно читать)
+                // Минимум 10 секунд, чтобы даже короткий текст не пролетал мгновенно
+                const charsPerSecond = 8;
+                const duration = Math.max(10, text.length / charsPerSecond);
+
+                // Перезапуск анимации
+                marqueeTextEl.style.animation = 'none';
+                void marqueeTextEl.offsetWidth;
+                marqueeTextEl.style.animation = `marqueeScroll ${duration}s linear infinite`;
+            }
+
+            function renderAll() {
+                if (marqueeMode) {
+                    renderMarquee();
+                } else {
+                    renderLines();
+                }
+            }
+
+            function appendWords(newWords) {
+                if (!newWords.length) return;
+
+                for (const w of newWords) {
+                    addedWords.push(w);
+                    addedWordsSet.add(w.toLowerCase());
+                }
+                if (addedWords.length > 500) {
+                    addedWords = addedWords.slice(-300);
+                    addedWordsSet = new Set(addedWords.map(w => w.toLowerCase()));
+                }
+
+                renderAll();
             }
 
             function clearLines() {
                 linesEl.innerHTML = '';
                 linesEl.style.transform = 'translateY(0)';
+                marqueeTextEl.textContent = '';
+                marqueeTextEl.style.animation = 'none';
                 addedWords = [];
                 addedWordsSet = new Set();
+            }
+
+            // --- Переключение режима бегущей строки ---
+            function toggleMarqueeMode() {
+                marqueeMode = !marqueeMode;
+
+                if (marqueeMode) {
+                    document.body.classList.add('marquee-mode');
+                    marqueeCont.classList.add('active');
+                    marqueeBtn.textContent = 'Бегущая строка: вкл';
+                    marqueeBtn.classList.add('active');
+                    renderMarquee();
+                } else {
+                    document.body.classList.remove('marquee-mode');
+                    marqueeCont.classList.remove('active');
+                    marqueeBtn.textContent = 'Бегущая строка: выкл';
+                    marqueeBtn.classList.remove('active');
+                    renderLines();
+                }
+                statusEl.textContent = marqueeMode ? 'Режим бегущей строки включён' : 'Обычный режим';
             }
 
             recognition = new SpeechRecognition();
@@ -300,7 +385,6 @@
             recognition.interimResults = true;
 
             recognition.onresult = function(event) {
-                // Собираем ВЕСЬ финальный текст из текущего event
                 let finalText = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
@@ -344,28 +428,14 @@
                 statusEl.textContent = isListening ? 'Очищено — продолжаю слушать' : 'Очищено';
             });
 
+            marqueeBtn.addEventListener('click', toggleMarqueeMode);
+
             window.addEventListener('orientationchange', function() {
-                // Пересобираем ленту из уже добавленных слов
-                const allText = addedWords.join(' ');
-                linesEl.innerHTML = '';
-                if (allText) {
-                    // Добавляем без повторной дедупликации
-                    const lines = wrapText(allText, getMaxTextWidth());
-                    for (const lineText of lines) {
-                        const div = document.createElement('div');
-                        div.className = 'sub-line';
-                        div.textContent = lineText;
-                        linesEl.appendChild(div);
-                    }
-                    while (linesEl.children.length > MAX_LINES) {
-                        linesEl.removeChild(linesEl.firstChild);
-                    }
-                    requestAnimationFrame(scrollToBottom);
-                }
+                renderAll();
             });
 
             window.addEventListener('resize', function() {
-                requestAnimationFrame(scrollToBottom);
+                if (!marqueeMode) requestAnimationFrame(scrollToBottom);
             });
         })();
     </script>
