@@ -2,100 +2,122 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Русские субтитры — лента снизу вверх</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+
+        :root {
+            --controls-height: 84px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --font-size: 26px;
+        }
+
+        html, body {
             background: #000;
             color: #fff;
             font-family: system-ui, -apple-system, sans-serif;
             overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end; /* лента прижата к низу */
-            align-items: center;
+            height: 100%;
+            width: 100%;
+            -webkit-text-size-adjust: 100%;
+            overscroll-behavior: none;
         }
 
-        /* Окно субтитров: фиксированная высота, скрывает всё, что вышло за верх */
+        /* Окно субтитров: прижато к низу, но выше панели кнопок */
         #subtitles-window {
-            width: 100%;
-            height: 40vh;               /* сколько места занимает лента */
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: calc(var(--controls-height) + var(--safe-bottom) + 8px);
+            height: 34vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;  /* новые строки прижимаются к низу */
-            padding: 20px 24px;
-            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.85) 40%);
-            /* маска сверху для плавного исчезновения старых строк */
+            justify-content: flex-end;
+            padding: 12px 16px 8px;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 35%);
             -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
             mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+            pointer-events: none;
         }
 
         #lines {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             transition: transform 0.35s ease;
+            will-change: transform;
         }
 
         .sub-line {
-            font-size: 34px;
-            line-height: 1.25;
+            font-size: var(--font-size);
+            line-height: 1.22;
             font-weight: 600;
             color: #fff;
-            text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            text-shadow: 0 2px 6px rgba(0,0,0,0.95);
             word-wrap: break-word;
+            overflow-wrap: anywhere;
             opacity: 0;
-            transform: translateY(20px);
-            animation: lineIn 0.35s ease forwards;
+            transform: translateY(16px);
+            animation: lineIn 0.3s ease forwards;
         }
 
-        /* Последняя (самая нижняя) строка — акцентная, чуть ярче */
-        .sub-line:last-child {
-            color: #ffffff;
-        }
-
-        /* Предыдущие — приглушены */
-        .sub-line:not(:last-child) {
-            color: #bbbbbb;
-        }
+        .sub-line:not(:last-child) { color: #b8b8b8; }
+        .sub-line:last-child { color: #ffffff; }
 
         @keyframes lineIn {
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Панель управления: три кнопки */
         .controls {
             position: fixed;
-            bottom: 20px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: var(--controls-height);
+            padding: 10px 12px calc(10px + var(--safe-bottom));
             display: flex;
-            gap: 20px;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.6));
             z-index: 10;
         }
 
         button {
-            padding: 14px 30px;
-            font-size: 18px;
-            font-weight: bold;
+            flex: 1 1 0;
+            padding: 13px 0;
+            font-size: 15px;
+            font-weight: 700;
             border: none;
-            border-radius: 50px;
+            border-radius: 13px;
             color: #fff;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: opacity 0.15s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+            white-space: nowrap;
         }
-        button:active { opacity: 0.7; }
-        #startBtn { background: #007aff; }
-        #stopBtn { background: #ff3b30; display: none; }
+        button:active { opacity: 0.75; transform: scale(0.97); }
 
+        #startBtn { background: #007aff; }
+        #stopBtn  { background: #ff3b30; display: none; }
+        /* Очистить — второстепенная, серая */
+        #clearBtn { background: #3a3a3c; flex: 0.8 1 0; }
+
+        /* Статус сверху */
         #status {
             position: fixed;
-            top: 20px;
-            font-size: 15px;
+            top: calc(8px + env(safe-area-inset-top, 0px));
+            left: 0;
+            right: 0;
+            font-size: 13px;
             color: #888;
             text-align: center;
-            width: 100%;
-            padding: 0 20px;
+            padding: 0 16px;
+            z-index: 5;
+            pointer-events: none;
         }
 
         /* Скрытый элемент для измерения ширины текста */
@@ -103,11 +125,26 @@
             position: absolute;
             visibility: hidden;
             white-space: nowrap;
-            font-size: 34px;
+            font-size: var(--font-size);
             font-weight: 600;
             font-family: system-ui, -apple-system, sans-serif;
             left: -9999px;
             top: 0;
+        }
+
+        /* Горизонтальная ориентация */
+        @media (orientation: landscape) {
+            :root {
+                --controls-height: 70px;
+                --font-size: 30px;
+            }
+            #subtitles-window { height: 42vh; }
+            button { font-size: 15px; padding: 11px 0; }
+        }
+
+        /* Очень узкие экраны */
+        @media (max-width: 360px) {
+            button { font-size: 13px; }
         }
     </style>
 </head>
@@ -115,7 +152,6 @@
 
     <div id="status">Нажмите «Начать» для распознавания русской речи</div>
 
-    <!-- Окно с лентой субтитров -->
     <div id="subtitles-window">
         <div id="lines"></div>
     </div>
@@ -123,6 +159,7 @@
     <div class="controls">
         <button id="startBtn">Начать</button>
         <button id="stopBtn">Остановить</button>
+        <button id="clearBtn">Очистить</button>
     </div>
 
     <span id="measure"></span>
@@ -134,12 +171,13 @@
             const measureEl  = document.getElementById('measure');
             const startBtn   = document.getElementById('startBtn');
             const stopBtn    = document.getElementById('stopBtn');
+            const clearBtn   = document.getElementById('clearBtn');
+            const windowEl   = document.getElementById('subtitles-window');
 
             let recognition = null;
             let isListening = false;
 
-            // Сколько строк максимум держим на экране
-            const MAX_LINES = 4;
+            const MAX_LINES = 3;
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -148,7 +186,10 @@
                 return;
             }
 
-            // --- Разбивка текста на строки по ширине контейнера ---
+            function getMaxTextWidth() {
+                return windowEl.clientWidth - 32;
+            }
+
             function wrapText(text, maxWidth) {
                 const words = text.split(/\s+/);
                 const lines = [];
@@ -168,15 +209,16 @@
                 return lines;
             }
 
-            // --- Добавить новый текст в ленту ---
+            function scrollToBottom() {
+                const overflow = linesEl.scrollHeight - windowEl.clientHeight + 8;
+                linesEl.style.transform = overflow > 0 ? `translateY(-${overflow}px)` : 'translateY(0)';
+            }
+
             function appendText(text) {
                 text = text.trim();
                 if (!text) return;
 
-                // Ширина, доступная для текста (за вычетом padding окна)
-                const winWidth = document.getElementById('subtitles-window').clientWidth - 48;
-
-                const lines = wrapText(text, winWidth);
+                const lines = wrapText(text, getMaxTextWidth());
 
                 for (const lineText of lines) {
                     const div = document.createElement('div');
@@ -185,25 +227,18 @@
                     linesEl.appendChild(div);
                 }
 
-                // Ограничиваем количество строк: удаляем верхние
                 while (linesEl.children.length > MAX_LINES) {
                     linesEl.removeChild(linesEl.firstChild);
                 }
 
-                // Плавно прокручиваем, чтобы последняя строка была видна
-                // (когда строк больше, чем помещается в окно)
-                const windowEl = document.getElementById('subtitles-window');
-                const overflow = linesEl.scrollHeight - windowEl.clientHeight;
-                // Если контент выше окна — сдвигаем вверх на величину переполнения
-                if (overflow > 0) {
-                    linesEl.style.transform = `translateY(-${overflow}px)`;
-                } else {
-                    linesEl.style.transform = 'translateY(0)';
-                }
+                requestAnimationFrame(scrollToBottom);
             }
 
-            // --- Обработка промежуточного текста (в реальном времени) ---
-            let lastFinalWordCount = 0;
+            // Очистка ленты без остановки распознавания
+            function clearLines() {
+                linesEl.innerHTML = '';
+                linesEl.style.transform = 'translateY(0)';
+            }
 
             recognition = new SpeechRecognition();
             recognition.lang = 'ru-RU';
@@ -212,18 +247,12 @@
 
             recognition.onresult = function(event) {
                 let finalText = '';
-                let interimText = '';
-
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const t = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) finalText += t;
-                    else interimText += t;
+                    if (event.results[i].isFinal) {
+                        finalText += event.results[i][0].transcript;
+                    }
                 }
-
-                // Финальные фразы добавляем в ленту как новые строки
-                if (finalText.trim()) {
-                    appendText(finalText.trim());
-                }
+                if (finalText.trim()) appendText(finalText.trim());
             };
 
             recognition.onerror = function(e) {
@@ -239,7 +268,7 @@
             startBtn.addEventListener('click', function() {
                 statusEl.textContent = 'Слушаю... Говорите по-русски.';
                 startBtn.style.display = 'none';
-                stopBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'block';
                 isListening = true;
                 try { recognition.start(); } catch(e) {}
             });
@@ -247,9 +276,27 @@
             stopBtn.addEventListener('click', function() {
                 isListening = false;
                 recognition.stop();
-                statusEl.textContent = 'Остановлено';
+                statusEl.textContent = 'Остановлено — текст остаётся на экране';
                 stopBtn.style.display = 'none';
-                startBtn.style.display = 'inline-block';
+                startBtn.style.display = 'block';
+            });
+
+            // Кнопка «Очистить» — только текст, распознавание не трогаем
+            clearBtn.addEventListener('click', function() {
+                clearLines();
+                statusEl.textContent = isListening
+                    ? 'Очищено — продолжаю слушать'
+                    : 'Очищено';
+            });
+
+            window.addEventListener('orientationchange', function() {
+                const existing = Array.from(linesEl.children).map(el => el.textContent).join(' ');
+                linesEl.innerHTML = '';
+                if (existing) appendText(existing);
+            });
+
+            window.addEventListener('resize', function() {
+                requestAnimationFrame(scrollToBottom);
             });
         })();
     </script>
