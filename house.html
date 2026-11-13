@@ -92,6 +92,7 @@
     50%      { box-shadow: 0 0 0 30px rgba(255,255,255,0); }
   }
 
+  /* ====== NOW PLAYING — значок, авто-скрытие ====== */
   #status {
     position: fixed;
     bottom: 240px; left: 50%;
@@ -101,7 +102,7 @@
     letter-spacing: 4px;
     z-index: 1500;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.6s ease;
     pointer-events: none;
     text-align: center;
     white-space: nowrap;
@@ -111,7 +112,7 @@
 
   #hint {
     position: fixed;
-    top: 20px; left: 50%;
+    top: 70px; left: 50%;
     transform: translateX(-50%);
     color: rgba(255,255,255,0.5);
     font-size: 11px;
@@ -131,7 +132,7 @@
 
   #audioWarn {
     position: fixed;
-    top: 60px; left: 50%;
+    top: 110px; left: 50%;
     transform: translateX(-50%);
     color: rgba(255,200,80,0.85);
     font-size: 10px;
@@ -149,19 +150,20 @@
   }
   #audioWarn.visible { opacity: 1; }
 
+  /* ====== PROGRESS BAR — теперь СВЕРХУ ====== */
   #progressWrap {
     position: fixed;
-    bottom: 220px; left: 0;
+    top: 0; left: 0;
     width: 100%;
-    height: 40px;
-    z-index: 1500;
+    height: 44px;
+    z-index: 1600;
     display: flex;
     align-items: center;
     padding: 0 20px;
     gap: 14px;
-    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-20px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     pointer-events: none;
   }
@@ -195,6 +197,7 @@
     font-size: 12px;
     font-variant-numeric: tabular-nums;
     min-width: 90px;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9);
   }
 
   #nextBtn {
@@ -304,15 +307,13 @@ const CONFIG = {
   TREBLE_BOOST_DB: 12,
   TREBLE_FREQ_HZ: 3000,
 
-  // === ТЕМП ===
-  // BPM, ниже которого темп считается "медленным" (редкая смена)
   BPM_MIN: 60,
-  // BPM, выше которого темп считается "быстрым" (жёсткий фликер)
   BPM_MAX: 160,
-  // Диапазон интервала смены кадра при медленном темпе (мс)
   FLICKER_SLOW: [600, 1200],
-  // Диапазон интервала смены кадра при быстром темпе (мс)
   FLICKER_FAST: [60, 140],
+
+  // Через сколько мс прятать значок ▶ после старта воспроизведения
+  STATUS_HIDE_DELAY: 2500,
 
   PALETTES: [
     ['#ff004c', '#001eff', '#00fff0'],
@@ -332,7 +333,10 @@ const CONFIG = {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
       title: 'VK Track',
     },
-    { src: 'track.mp3', title: 'Local Fallback' },
+   {
+      src: 'HeldeepRadio.aac',
+      title: 'VK Track',
+    }
   ],
 
   IMAGE_URLS: [
@@ -396,7 +400,6 @@ let bassEnergy = 0, midEnergy = 0, highEnergy = 0;
 let analyserAvailable = false;
 let fakeEnergyPhase = 0;
 
-// Бит-детектор
 let prevBassEnergy = 0;
 let prevHighEnergy = 0;
 let lastBeatTime = 0;
@@ -404,28 +407,23 @@ let lastHighBeatTime = 0;
 let beatPulse = 0;
 let highPulse = 0;
 
-// === ТЕМП ===
-// Мгновенный BPM по интервалам между битами
 let bpmInstant = 0;
-// Сглаженный BPM (для стабильной смены визуала)
 let bpmSmooth = 0;
-// Нормализованный темп 0..1 (0 = медленно, 1 = быстро)
 let tempoNorm = 0;
-// Сколько подряд битов пришло — для уверенности в темпе
 let beatStreak = 0;
 let beatIntervals = [];
-// Плотность событий за последнюю секунду (биты + хай-хэты)
 let eventTimes = [];
-// "Плотностной" темп — сколько событий/сек
 let eventDensity = 0;
-// Флаг — темп определён (есть хотя бы 3 бита)
 let tempoLocked = false;
 
 let imageCache = new Map();
 let spectrumValues = new Float32Array(CONFIG.SPECTRUM_BARS);
 
-// Кэш следующего интервала смены (пересчитывается при изменении темпа)
 let nextFlickerDelay = 500;
+
+// Таймер скрытия значка ▶ и прогресс-бара
+let statusHideTimer = null;
+let progressHideTimer = null;
 
 /* ============================================================
    WEBAUDIO ANALYSER + TREBLE BOOST
@@ -473,7 +471,6 @@ function initAnalyser() {
     audioWarnEl.textContent = '⚠ аудио-анализ недоступен (CORS) — визуал в авто-режиме';
     audioWarnEl.classList.add('visible');
     setTimeout(() => audioWarnEl.classList.remove('visible'), 6000);
-    // В авто-режиме темп берём из псевдо-энергии
     tempoLocked = true;
   }
 }
@@ -502,7 +499,6 @@ function updateAudioEnergy(now) {
     midEnergy  = m / Math.max(1, midEnd - bassEnd) / 255;
     highEnergy = h / Math.max(1, highEnd - midEnd) / 255;
 
-    // ===== БИТ-ДЕТЕКТОР =====
     const bassDelta = bassEnergy - prevBassEnergy;
     const timeSinceLastBeat = now - lastBeatTime;
 
@@ -512,22 +508,16 @@ function updateAudioEnergy(now) {
       beatStreak++;
       eventTimes.push(now);
 
-      // Интервал между битами
       if (beatIntervals.length > 0) {
         const interval = now - beatIntervals[beatIntervals.length - 1];
-        // Валидный интервал: 200 мс (300 BPM) .. 1500 мс (40 BPM)
         if (interval > 200 && interval < 1500) {
           beatIntervals.push(now);
           if (beatIntervals.length > 10) beatIntervals.shift();
 
-          // Мгновенный BPM по последнему интервалу
           const instantBpm = 60000 / interval;
-
-          // Сглаживание: чем больше битов, тем стабильнее
           if (bpmSmooth === 0) {
             bpmSmooth = instantBpm;
           } else {
-            // Адаптивное сглаживание
             const alpha = tempoLocked ? 0.15 : 0.4;
             bpmSmooth = bpmSmooth * (1 - alpha) + instantBpm * alpha;
           }
@@ -541,14 +531,12 @@ function updateAudioEnergy(now) {
         beatIntervals.push(now);
       }
 
-      // Вспышка
       if (!CONFIG.REDUCED_MOTION) {
         beatFlash.style.opacity = Math.min(0.35, bassDelta * 2.5);
         setTimeout(() => { beatFlash.style.opacity = '0'; }, 80);
       }
     }
 
-    // ===== ХАЙ-ХЭТ ДЕТЕКТОР =====
     const highDelta = highEnergy - prevHighEnergy;
     const timeSinceHighBeat = now - lastHighBeatTime;
     if (highDelta > 0.06 && highEnergy > 0.25 && timeSinceHighBeat > 120) {
@@ -563,7 +551,6 @@ function updateAudioEnergy(now) {
     beatPulse *= 0.88;
     highPulse *= 0.82;
 
-    // ===== СПЕКТР =====
     const bars = CONFIG.SPECTRUM_BARS;
     const minFreq = 30, maxFreq = 18000;
     const logMin = Math.log10(minFreq);
@@ -597,7 +584,6 @@ function updateAudioEnergy(now) {
         : prev + (v - prev) * 0.15;
     }
   } else {
-    // Авто-режим
     fakeEnergyPhase += 0.016;
     const t = now * 0.001;
     bassEnergy = 0.35 + 0.3 * Math.sin(t * 1.5) * Math.sin(t * 0.7);
@@ -610,7 +596,6 @@ function updateAudioEnergy(now) {
     beatPulse *= 0.9;
     highPulse *= 0.85;
 
-    // Псевдо-темп: медленно гуляет
     const fakeBpm = 90 + 50 * Math.sin(t * 0.15);
     bpmSmooth = fakeBpm;
     bpmInstant = fakeBpm;
@@ -625,40 +610,31 @@ function updateAudioEnergy(now) {
     }
   }
 
-  // ===== ПЛОТНОСТЬ СОБЫТИЙ (сколько битов+хэтов в секунду) =====
+  // Плотность событий
   const cutoff = now - 1000;
   while (eventTimes.length && eventTimes[0] < cutoff) {
     eventTimes.shift();
   }
-  // Сглаживание плотности
-  const instantDensity = eventTimes.length; // events per second
+  const instantDensity = eventTimes.length;
   eventDensity = eventDensity * 0.9 + instantDensity * 0.1;
 
-  // ===== ИТОГОВЫЙ ТЕМП 0..1 =====
-  // Комбинируем BPM и плотность событий
+  // Итоговый темп
   let bpmNorm = 0;
   if (bpmSmooth > 0) {
     bpmNorm = (bpmSmooth - CONFIG.BPM_MIN) / (CONFIG.BPM_MAX - CONFIG.BPM_MIN);
     bpmNorm = Math.max(0, Math.min(1, bpmNorm));
   }
-  // Плотность: 0..8 событий/сек → 0..1
   let densityNorm = Math.max(0, Math.min(1, eventDensity / 8));
-
-  // Если BPM ещё не определён — используем только плотность
   const rawTempo = tempoLocked
     ? (bpmNorm * 0.7 + densityNorm * 0.3)
     : densityNorm;
 
-  // Плавное сглаживание итогового темпа, чтобы не дёргался
   tempoNorm = tempoNorm * 0.92 + rawTempo * 0.08;
   tempoNorm = Math.max(0, Math.min(1, tempoNorm));
 
-  // ===== ПЕРЕСЧЁТ ЗАДЕРЖКИ СМЕНЫ =====
-  // Интерполируем между FLICKER_SLOW и FLICKER_FAST по tempoNorm
   const slowAvg = (CONFIG.FLICKER_SLOW[0] + CONFIG.FLICKER_SLOW[1]) / 2;
   const fastAvg = (CONFIG.FLICKER_FAST[0] + CONFIG.FLICKER_FAST[1]) / 2;
-  const baseAvg = slowAvg + (fastAvg - slowAvg) * tempoNorm;
-  nextFlickerDelay = baseAvg;
+  nextFlickerDelay = slowAvg + (fastAvg - slowAvg) * tempoNorm;
 }
 
 /* ============================================================
@@ -1177,7 +1153,7 @@ function hexToRgb(hex) {
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — трансформации зависят от темпа
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ
    ============================================================ */
 function switchRandomLayer() {
   const idx = Math.floor(Math.random() * layers.length);
@@ -1208,9 +1184,6 @@ function switchRandomLayer() {
         el.style.transform = 'none';
         el.style.filter = 'none';
       } else {
-        // Чем быстрее темп — тем сильнее трансформации
-        const intensity = 0.3 + tempo * 1.4;
-
         const scaleAmp = 0.15 + tempo * 0.6;
         const rotateAmp = 2 + tempo * 14;
         const skewAmp = 1 + tempo * 10;
@@ -1281,11 +1254,6 @@ function startChaos() {
   animationFrame = requestAnimationFrame(animate);
 }
 
-/* ============================================================
-   ГЛАВНОЕ: смена слоя по темпу
-   Интервал = базовый (из tempoNorm) + джиттер,
-   плюс мгновенная реакция на биты при быстром темпе.
-   ============================================================ */
 function scheduleFlicker() {
   if (CONFIG.REDUCED_MOTION) {
     flickerTimer = setTimeout(() => {
@@ -1295,14 +1263,10 @@ function scheduleFlicker() {
     return;
   }
 
-  // Разброс: чем быстрее темп, тем шире джиттер
   const jitter = 0.3 + tempoNorm * 0.7;
   const delay = nextFlickerDelay * (0.7 + Math.random() * jitter * 0.6);
 
   flickerTimer = setTimeout(() => {
-    // Вероятность смены зависит от темпа:
-    // медленно — иногда просто перерисовываем тот же слой
-    // быстро — почти всегда новый слой
     const switchChance = 0.4 + tempoNorm * 0.55;
 
     if (Math.random() < switchChance) {
@@ -1334,7 +1298,6 @@ function loadTrack(index) {
   audio.src = CONFIG.PLAYLIST[currentTrack].src;
   audio.load();
   console.log('🎵 Загрузка трека:', CONFIG.PLAYLIST[currentTrack].title);
-  // Сброс темпа при смене трека
   resetTempo();
 }
 
@@ -1372,6 +1335,35 @@ audio.addEventListener('error', (e) => {
 });
 
 /* ============================================================
+   ПОКАЗ/СКРЫТИЕ ЗНАЧКА ▶ И ПРОГРЕСС-БАРА
+   ============================================================ */
+function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
+  statusEl.classList.add('visible');
+  if (statusHideTimer) clearTimeout(statusHideTimer);
+  statusHideTimer = setTimeout(() => {
+    statusEl.classList.remove('visible');
+  }, ms);
+}
+
+function hideStatus() {
+  statusEl.classList.remove('visible');
+  if (statusHideTimer) { clearTimeout(statusHideTimer); statusHideTimer = null; }
+}
+
+function showProgressTemporarily(ms = 2500) {
+  progressWrap.classList.add('visible');
+  if (progressHideTimer) clearTimeout(progressHideTimer);
+  progressHideTimer = setTimeout(() => {
+    progressWrap.classList.remove('visible');
+  }, ms);
+}
+
+function hideProgress() {
+  progressWrap.classList.remove('visible');
+  if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
+}
+
+/* ============================================================
    PLAY / PAUSE
    ============================================================ */
 function startPlayback() {
@@ -1383,8 +1375,15 @@ function startPlayback() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
   playBtn.classList.add('hidden');
-  statusEl.classList.add('visible');
+
+  // Значок ▶ показываем на 2.5 сек и прячем
+  showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
+
+  // Прогресс-бар тоже показываем и прячем
+  showProgressTemporarily(2500);
+
   spectrumWrap.classList.add('visible');
+
   hintEl.classList.add('visible');
   setTimeout(() => hintEl.classList.remove('visible'), 4000);
 
@@ -1416,11 +1415,16 @@ function togglePause() {
   if (isPaused) {
     audio.pause();
     pauseOverlay.classList.add('visible');
+    // На паузе показываем значок ▶ и прогресс-бар постоянно
+    showStatusTemporarily(99999999);
     progressWrap.classList.add('visible');
+    if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
   } else {
     audio.play().catch(() => {});
     pauseOverlay.classList.remove('visible');
-    setTimeout(() => progressWrap.classList.remove('visible'), 2500);
+    // После снятия паузы — снова прячем через пару секунд
+    showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
+    showProgressTemporarily(2500);
   }
 }
 
@@ -1480,16 +1484,20 @@ stage.addEventListener('touchend', (e) => {
 /* ============================================================
    ПРОГРЕСС
    ============================================================ */
-let hideProgressTimeout = null;
+// Показ прогресс-бара при движении мыши
 stage.addEventListener('mousemove', () => {
   if (!isPlaying) return;
+  // Показываем на время, прячем при отсутствии движения
+  showProgressTemporarily(2000);
+});
+
+// При наведении на сам прогресс-бар — не прятать
+progressWrap.addEventListener('mouseenter', () => {
+  if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
   progressWrap.classList.add('visible');
-  if (hideProgressTimeout) clearTimeout(hideProgressTimeout);
-  if (!isPaused) {
-    hideProgressTimeout = setTimeout(() => {
-      progressWrap.classList.remove('visible');
-    }, 2000);
-  }
+});
+progressWrap.addEventListener('mouseleave', () => {
+  if (isPlaying && !isPaused) showProgressTemporarily(1500);
 });
 
 function formatTime(sec) {
@@ -1519,6 +1527,7 @@ progressBar.addEventListener('click', (e) => {
   const rect = progressBar.getBoundingClientRect();
   const p = (e.clientX - rect.left) / rect.width;
   audio.currentTime = p * audio.duration;
+  showProgressTemporarily(2000);
 });
 
 /* ============================================================
