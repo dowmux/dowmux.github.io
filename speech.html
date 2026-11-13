@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Русские субтитры - бегущая строка</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            color: #fff;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Контейнер бегущей строки: горизонтальное отображение */
+        #marquee-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            padding: 20px 0;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+        }
+
+        #marquee-text {
+            display: inline-block;
+            font-size: 48px;
+            font-weight: bold;
+            color: #fff;
+            padding-left: 100%; /* Начальная позиция за правым краем */
+            will-change: transform;
+            /* CSS-анимация бегущей строки */
+            animation: marquee 8s linear infinite;
+            /* Начальная скорость, будет скорректирована через JS */
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Панель управления */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            padding: 16px 32px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:active { opacity: 0.7; }
+        #startBtn { background: #007aff; }
+        #stopBtn { background: #ff3b30; display: none; }
+
+        #status {
+            position: fixed;
+            top: 20px;
+            font-size: 16px;
+            color: #888;
+            text-align: center;
+            width: 100%;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="status">Нажмите «Начать», чтобы включить распознавание речи</div>
+
+    <!-- Контейнер бегущей строки -->
+    <div id="marquee-container">
+        <span id="marquee-text">Ожидание речи...</span>
+    </div>
+
+    <!-- Кнопки управления -->
+    <div class="controls">
+        <button id="startBtn">Начать</button>
+        <button id="stopBtn">Остановить</button>
+    </div>
+
+    <script>
+        (function() {
+            const statusEl = document.getElementById('status');
+            const marqueeText = document.getElementById('marquee-text');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            let recognition = null;
+            let isListening = false;
+
+            // Проверка поддержки Web Speech API
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                statusEl.textContent = 'Ваш браузер не поддерживает распознавание речи. Используйте Chrome или Safari.';
+                startBtn.disabled = true;
+                return;
+            }
+
+            // Инициализация распознавания
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';          // Русский язык
+            recognition.continuous = true;        // Непрерывное распознавание
+            recognition.interimResults = true;    // Показывать промежуточные результаты (для эффекта реального времени)
+            recognition.maxAlternatives = 1;
+
+            // Обработка результатов распознавания
+            recognition.onresult = function(event) {
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Формирование отображаемого текста: финальный + промежуточный
+                const displayText = finalTranscript + interimTranscript;
+
+                if (displayText.trim()) {
+                    marqueeText.textContent = displayText.trim();
+                    // Перезапуск CSS-анимации для корректного отображения новой длины текста
+                    restartMarquee();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Ошибка распознавания:', event.error);
+                if (event.error === 'not-allowed') {
+                    statusEl.textContent = 'Доступ к микрофону запрещён. Разрешите в настройках браузера.';
+                } else if (event.error === 'no-speech') {
+                    statusEl.textContent = 'Речь не обнаружена, слушаю...';
+                } else {
+                    statusEl.textContent = 'Ошибка: ' + event.error;
+                }
+            };
+
+            recognition.onend = function() {
+                // Если всё ещё в режиме прослушивания, перезапустить (для непрерывной работы)
+                if (isListening) {
+                    try { recognition.start(); } catch (e) {}
+                }
+            };
+
+            // Перезапуск анимации (для пересчёта скорости по новой длине текста)
+            function restartMarquee() {
+                marqueeText.style.animation = 'none';
+                // Форсировать пересчёт стилей
+                void marqueeText.offsetWidth;
+                marqueeText.style.animation = 'marquee 8s linear infinite';
+            }
+
+            // Старт
+            startBtn.addEventListener('click', function() {
+                statusEl.textContent = 'Слушаю... Говорите по-русски.';
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+                isListening = true;
+
+                try {
+                    recognition.start();
+                } catch (e) {
+                    // Если уже запущено, игнорировать
+                }
+            });
+
+            // Стоп
+            stopBtn.addEventListener('click', function() {
+                isListening = false;
+                recognition.stop();
+                statusEl.textContent = 'Остановлено';
+                stopBtn.style.display = 'none';
+                startBtn.style.display = 'inline-block';
+            });
+
+            // Разрешение на микрофон требуется для Web Speech API
+            // При первом нажатии браузер запросит разрешение автоматически
+        })();
+    </script>
+</body>
+</html>
