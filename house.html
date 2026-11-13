@@ -39,11 +39,12 @@
     image-rendering: crisp-edges;
   }
 
+  /* ====== SPECTRUM — на весь экран по высоте ====== */
   #spectrumWrap {
     position: fixed;
     left: 0; right: 0; bottom: 0;
     width: 100vw;
-    height: 220px;
+    height: 100vh;         /* ← было 220px */
     z-index: 800;
     pointer-events: none;
     opacity: 0;
@@ -92,7 +93,6 @@
     50%      { box-shadow: 0 0 0 30px rgba(255,255,255,0); }
   }
 
-  /* ====== NOW PLAYING — значок, авто-скрытие ====== */
   #status {
     position: fixed;
     bottom: 240px; left: 50%;
@@ -150,10 +150,10 @@
   }
   #audioWarn.visible { opacity: 1; }
 
-  /* ====== PROGRESS BAR — теперь СВЕРХУ ====== */
+  /* ====== CROSSBAR — в нижней части экрана ====== */
   #progressWrap {
     position: fixed;
-    top: 0; left: 0;
+    bottom: 220px; left: 0;      /* ← вернул вниз */
     width: 100%;
     height: 44px;
     z-index: 1600;
@@ -161,9 +161,9 @@
     align-items: center;
     padding: 0 20px;
     gap: 14px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(20px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     pointer-events: none;
   }
@@ -304,6 +304,11 @@ const CONFIG = {
 
   SPECTRUM_BARS: 128,
 
+  // Максимальная высота бара в долях от высоты экрана (1 = во весь экран)
+  SPECTRUM_MAX_HEIGHT: 1.0,
+  // Отражение сверху (доля высоты)
+  SPECTRUM_REFLECTION: 0.35,
+
   TREBLE_BOOST_DB: 12,
   TREBLE_FREQ_HZ: 3000,
 
@@ -312,7 +317,6 @@ const CONFIG = {
   FLICKER_SLOW: [600, 1200],
   FLICKER_FAST: [60, 140],
 
-  // Через сколько мс прятать значок ▶ после старта воспроизведения
   STATUS_HIDE_DELAY: 2500,
 
   PALETTES: [
@@ -329,7 +333,7 @@ const CONFIG = {
   ],
 
   PLAYLIST: [
-    {
+   {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
       title: 'VK Track',
     },
@@ -421,7 +425,6 @@ let spectrumValues = new Float32Array(CONFIG.SPECTRUM_BARS);
 
 let nextFlickerDelay = 500;
 
-// Таймер скрытия значка ▶ и прогресс-бара
 let statusHideTimer = null;
 let progressHideTimer = null;
 
@@ -610,7 +613,6 @@ function updateAudioEnergy(now) {
     }
   }
 
-  // Плотность событий
   const cutoff = now - 1000;
   while (eventTimes.length && eventTimes[0] < cutoff) {
     eventTimes.shift();
@@ -618,7 +620,6 @@ function updateAudioEnergy(now) {
   const instantDensity = eventTimes.length;
   eventDensity = eventDensity * 0.9 + instantDensity * 0.1;
 
-  // Итоговый темп
   let bpmNorm = 0;
   if (bpmSmooth > 0) {
     bpmNorm = (bpmSmooth - CONFIG.BPM_MIN) / (CONFIG.BPM_MAX - CONFIG.BPM_MIN);
@@ -638,7 +639,7 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
-   SPECTRUM
+   SPECTRUM — во всю высоту экрана
    ============================================================ */
 function resizeSpectrum() {
   const dpr = window.devicePixelRatio || 1;
@@ -662,10 +663,13 @@ function drawSpectrum() {
   const barWidth = W / bars;
   const gap = Math.max(1, barWidth * 0.15);
 
+  // Максимальная высота бара = весь экран (или чуть меньше)
+  const maxH = H * CONFIG.SPECTRUM_MAX_HEIGHT;
+
   for (let i = 0; i < bars; i++) {
     const v = spectrumValues[i];
     const boost = 1 + (i / bars) * 0.5;
-    const barH = Math.min(H, v * H * 0.95 * boost + beatPulse * H * 0.08);
+    const barH = Math.min(maxH, v * maxH * 0.95 * boost + beatPulse * maxH * 0.08);
 
     const x = i * barWidth;
     const y = H - barH;
@@ -682,19 +686,21 @@ function drawSpectrum() {
     spectrumCtx.fillStyle = grad;
     spectrumCtx.fillRect(x + gap / 2, y, barWidth - gap, barH);
 
+    // Пик-кап
     spectrumCtx.fillStyle = `hsla(${hue}, 100%, 85%, ${0.6 + v * 0.4})`;
     spectrumCtx.fillRect(x + gap / 2, y - 2, barWidth - gap, 2);
   }
 
+  // Отражение сверху (мягкое)
   spectrumCtx.globalCompositeOperation = 'screen';
-  spectrumCtx.globalAlpha = 0.25;
+  spectrumCtx.globalAlpha = 0.22;
   for (let i = 0; i < bars; i++) {
     const v = spectrumValues[i];
-    const barH = Math.min(H * 0.6, v * H * 0.45);
+    const reflH = Math.min(H * CONFIG.SPECTRUM_REFLECTION, v * H * CONFIG.SPECTRUM_REFLECTION);
     const x = i * barWidth;
     const hue = 260 - (i / bars) * 260;
     spectrumCtx.fillStyle = `hsla(${hue}, 100%, 60%, 0.3)`;
-    spectrumCtx.fillRect(x + gap / 2, 0, barWidth - gap, barH);
+    spectrumCtx.fillRect(x + gap / 2, 0, barWidth - gap, reflH);
   }
   spectrumCtx.globalAlpha = 1;
   spectrumCtx.globalCompositeOperation = 'source-over';
@@ -1335,7 +1341,7 @@ audio.addEventListener('error', (e) => {
 });
 
 /* ============================================================
-   ПОКАЗ/СКРЫТИЕ ЗНАЧКА ▶ И ПРОГРЕСС-БАРА
+   ПОКАЗ/СКРЫТИЕ ЗНАЧКА ▶ И CROSSBAR
    ============================================================ */
 function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
   statusEl.classList.add('visible');
@@ -1376,10 +1382,7 @@ function startPlayback() {
 
   playBtn.classList.add('hidden');
 
-  // Значок ▶ показываем на 2.5 сек и прячем
   showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
-
-  // Прогресс-бар тоже показываем и прячем
   showProgressTemporarily(2500);
 
   spectrumWrap.classList.add('visible');
@@ -1415,14 +1418,12 @@ function togglePause() {
   if (isPaused) {
     audio.pause();
     pauseOverlay.classList.add('visible');
-    // На паузе показываем значок ▶ и прогресс-бар постоянно
     showStatusTemporarily(99999999);
     progressWrap.classList.add('visible');
     if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
   } else {
     audio.play().catch(() => {});
     pauseOverlay.classList.remove('visible');
-    // После снятия паузы — снова прячем через пару секунд
     showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
     showProgressTemporarily(2500);
   }
@@ -1484,14 +1485,11 @@ stage.addEventListener('touchend', (e) => {
 /* ============================================================
    ПРОГРЕСС
    ============================================================ */
-// Показ прогресс-бара при движении мыши
 stage.addEventListener('mousemove', () => {
   if (!isPlaying) return;
-  // Показываем на время, прячем при отсутствии движения
   showProgressTemporarily(2000);
 });
 
-// При наведении на сам прогресс-бар — не прятать
 progressWrap.addEventListener('mouseenter', () => {
   if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
   progressWrap.classList.add('visible');
