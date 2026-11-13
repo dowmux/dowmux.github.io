@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chaotic Video Player — Title Chaos</title>
+<title>Chaotic Video Player — Sharp + Bass Impact</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -21,6 +21,9 @@
     overflow: hidden;
     background: #000;
     cursor: pointer;
+    /* Басовый удар — тряска всего stage */
+    will-change: transform, filter;
+    transform-origin: center center;
   }
 
   #brightBase {
@@ -49,13 +52,48 @@
     opacity: 0;
     pointer-events: none;
     will-change: transform, opacity, filter;
-    image-rendering: auto;
+    /* РЕЗКОСТЬ: не сглаживаем, отдаём нативную плотность */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
     z-index: 1;
   }
 
   .video-layer.pixelated {
     image-rendering: pixelated;
-    image-rendering: crisp-edges;
+  }
+
+  /* ====== BASS SHOCKWAVE — ударная волна из центра ====== */
+  #bassShockwave {
+    position: fixed;
+    top: 50%; left: 50%;
+    width: 100vmax; height: 100vmax;
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 780;
+    opacity: 0;
+    background: radial-gradient(circle,
+      rgba(255,255,255,0) 30%,
+      rgba(0,255,255,0.35) 55%,
+      rgba(255,0,200,0.25) 70%,
+      transparent 85%);
+    mix-blend-mode: screen;
+    will-change: transform, opacity;
+  }
+
+  /* ====== BASS VIGNETTE — затемнение по краям на бас ====== */
+  #bassVignette {
+    position: fixed; inset: 0;
+    z-index: 775;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(circle at center,
+      transparent 40%,
+      rgba(255,0,150,0.25) 70%,
+      rgba(0,0,0,0.6) 100%);
+    mix-blend-mode: multiply;
+    will-change: opacity;
+    transition: opacity 0.1s ease-out;
   }
 
   /* ====== SPECTRUM ====== */
@@ -77,7 +115,7 @@
     display: block;
   }
 
-  /* ====== TITLE — хаотичный оверлей ====== */
+  /* ====== TITLE ====== */
   #titleOverlay {
     position: fixed;
     top: 50%; left: 50%;
@@ -91,12 +129,8 @@
     will-change: transform, opacity;
     transition: opacity 0.15s ease;
   }
+  #titleOverlay.visible { opacity: 1; }
 
-  #titleOverlay.visible {
-    opacity: 1;
-  }
-
-  /* Глитч на бит */
   #titleText {
     font-family: 'Arial Black', 'Impact', system-ui, sans-serif;
     font-size: clamp(32px, 6vw, 96px);
@@ -115,14 +149,12 @@
     will-change: transform, text-shadow;
     transition: transform 0.1s ease;
   }
-
   #titleText::before,
   #titleText::after {
     content: attr(data-text);
     position: absolute;
     top: 0; left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100%; height: 100%;
     pointer-events: none;
     opacity: 0;
     text-shadow: none;
@@ -183,9 +215,7 @@
     opacity: 0.85;
   }
 
-  #titleOverlay.intro {
-    animation: titleIntro 2.5s ease-out;
-  }
+  #titleOverlay.intro { animation: titleIntro 2.5s ease-out; }
   @keyframes titleIntro {
     0%   { transform: translate(-50%, -50%) scale(0.7); filter: blur(8px); opacity: 0; }
     15%  { transform: translate(-50%, -50%) scale(1.02); filter: blur(0); opacity: 1; }
@@ -399,11 +429,24 @@
     background: radial-gradient(ellipse at center, rgba(255,255,255,0.08), transparent 70%);
   }
 
+  /* ====== BASS OVERLAY — хроматическая аберрация на бас ====== */
+  #bassChroma {
+    position: fixed; inset: 0;
+    z-index: 785;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+    background:
+      linear-gradient(90deg, rgba(255,0,0,0.15), transparent 30%, transparent 70%, rgba(0,255,255,0.15));
+    will-change: opacity;
+    transition: opacity 0.08s ease-out;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #playBtn { animation: none; }
     #brightBase { animation: none; }
     .video-layer { transition: opacity 0.5s ease !important; }
-    #beatFlash, #chaosFlash { display: none; }
+    #beatFlash, #chaosFlash, #bassShockwave, #bassVignette, #bassChroma { display: none; }
     #titleOverlay.glitch #titleText::before,
     #titleOverlay.glitch #titleText::after { animation: none; }
   }
@@ -413,6 +456,12 @@
 
 <div id="brightBase"></div>
 <div id="stage"></div>
+
+<!-- BASS визуал -->
+<div id="bassVignette"></div>
+<div id="bassShockwave"></div>
+<div id="bassChroma"></div>
+
 <div id="beatFlash"></div>
 <div id="chaosFlash"></div>
 <div id="glowVeil"></div>
@@ -460,11 +509,32 @@ const CONFIG = {
   MAX_FPS: 60,
   REDUCED_MOTION: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 
+  // Canvas-слои в полном разрешении экрана (чётче)
+  CANVAS_RES_SCALE: 1.0,   // 1.0 = native; 0.5 = в 2 раза меньше, мыльнее
+
   SPECTRUM_BARS: 128,
   SPECTRUM_HEIGHT_PX: 180,
 
   TREBLE_BOOST_DB: 12,
   TREBLE_FREQ_HZ: 3000,
+
+  // === БАС-ЭФФЕКТ ===
+  // Порог bassEnergy, выше которого срабатывает удар (0..1)
+  BASS_IMPACT_THRESHOLD: 0.42,
+  // Минимальный интервал между ударами (мс), чтобы не дёргалось постоянно
+  BASS_IMPACT_MIN_INTERVAL: 140,
+  // Амплитуда тряски stage (px), макс при bassEnergy=1
+  BASS_SHAKE_PX: 18,
+  // Амплитуда зума stage при ударе
+  BASS_ZOOM_AMOUNT: 0.035,
+  // Амплитуда хроматической аберрации (px)
+  BASS_CHROMA_PX: 14,
+  // Сила затемнения виньетки на бас
+  BASS_VIGNETTE_STRENGTH: 0.5,
+  // Длительность ударной волны (мс)
+  BASS_SHOCKWAVE_DURATION: 480,
+  // Длительность отката тряски (мс)
+  BASS_SHAKE_DURATION: 180,
 
   BPM_MIN: 60,
   BPM_MAX: 160,
@@ -473,27 +543,17 @@ const CONFIG = {
 
   STATUS_HIDE_DELAY: 2500,
 
-  // === TITLE — хаотичное мелькание ===
-  // Шанс того, что название мигнёт при переключении слоя
   TITLE_FLASH_ON_SWITCH: 0.35,
-  // Длительность одного "мига" названия (мс)
   TITLE_FLASH_DURATION: [80, 260],
-  // Шанс глитча при каждом миге
   TITLE_GLITCH_ON_FLASH: 0.6,
-  // Длительность глитча (мс)
   TITLE_GLITCH_DURATION: [60, 160],
-  // Шанс "двойного мига" (миг, пауза, миг)
   TITLE_DOUBLE_FLASH_CHANCE: 0.25,
-  // Шанс случайного смещения текста при миге (в %)
   TITLE_OFFSET_CHANCE: 0.4,
   TITLE_OFFSET_RANGE: 8,
-  // Шанс случайного поворота при миге (в deg)
   TITLE_ROTATE_CHANCE: 0.25,
   TITLE_ROTATE_RANGE: 6,
-  // Шанс случайного масштаба при миге
   TITLE_SCALE_CHANCE: 0.3,
   TITLE_SCALE_RANGE: [0.85, 1.15],
-  // Глитч на бит (дополнительно к хаотичному мельканию)
   TITLE_GLITCH_ON_BEAT: true,
   TITLE_GLITCH_MIN_INTERVAL: 280,
 
@@ -504,7 +564,8 @@ const CONFIG = {
 
   MIN_SCALE: 1.0,
   MAX_SCALE: 1.5,
-  MAX_BLUR_PX: 4,
+  // Blur полностью убран для чёткости
+  MAX_BLUR_PX: 0,
 
   PALETTES: [
     ['#ff004c', '#001eff', '#00fff0'],
@@ -521,9 +582,8 @@ const CONFIG = {
     ['#fceabb', '#f8b500', '#00b09b'],
   ],
 
-  // ⚠ Замени на реальные исполнителей и треки
   PLAYLIST: [
-     {
+    {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
       title: 'Group Therapy',
       shortTitle: 'Above and Beyond',
@@ -536,22 +596,22 @@ const CONFIG = {
   ],
 
   IMAGE_URLS: [
-    'https://picsum.photos/seed/chaos1/960/540',
-    'https://picsum.photos/seed/chaos2/960/540',
-    'https://picsum.photos/seed/chaos3/960/540',
-    'https://picsum.photos/seed/chaos4/960/540',
-    'https://picsum.photos/seed/chaos5/960/540',
-    'https://picsum.photos/seed/chaos6/960/540',
-    'https://picsum.photos/seed/chaos7/960/540',
-    'https://picsum.photos/seed/chaos8/960/540',
-    'https://picsum.photos/seed/chaos9/960/540',
-    'https://picsum.photos/seed/chaos10/960/540',
-    'https://picsum.photos/seed/chaos11/960/540',
-    'https://picsum.photos/seed/chaos12/960/540',
-    'https://picsum.photos/seed/chaos13/960/540',
-    'https://picsum.photos/seed/chaos14/960/540',
-    'https://picsum.photos/seed/chaos15/960/540',
-    'https://picsum.photos/seed/chaos16/960/540',
+    'https://picsum.photos/seed/chaos1/1920/1080',
+    'https://picsum.photos/seed/chaos2/1920/1080',
+    'https://picsum.photos/seed/chaos3/1920/1080',
+    'https://picsum.photos/seed/chaos4/1920/1080',
+    'https://picsum.photos/seed/chaos5/1920/1080',
+    'https://picsum.photos/seed/chaos6/1920/1080',
+    'https://picsum.photos/seed/chaos7/1920/1080',
+    'https://picsum.photos/seed/chaos8/1920/1080',
+    'https://picsum.photos/seed/chaos9/1920/1080',
+    'https://picsum.photos/seed/chaos10/1920/1080',
+    'https://picsum.photos/seed/chaos11/1920/1080',
+    'https://picsum.photos/seed/chaos12/1920/1080',
+    'https://picsum.photos/seed/chaos13/1920/1080',
+    'https://picsum.photos/seed/chaos14/1920/1080',
+    'https://picsum.photos/seed/chaos15/1920/1080',
+    'https://picsum.photos/seed/chaos16/1920/1080',
   ],
 };
 
@@ -577,6 +637,9 @@ const spectrumCanvas = document.getElementById('spectrumCanvas');
 const spectrumCtx = spectrumCanvas.getContext('2d');
 const titleOverlay = document.getElementById('titleOverlay');
 const titleText = document.getElementById('titleText');
+const bassShockwave = document.getElementById('bassShockwave');
+const bassVignette = document.getElementById('bassVignette');
+const bassChroma = document.getElementById('bassChroma');
 
 /* ============================================================
    СОСТОЯНИЕ
@@ -623,10 +686,17 @@ let nextFlickerDelay = 500;
 let statusHideTimer = null;
 let progressHideTimer = null;
 
-// === TITLE (хаотичный) ===
-let titleFlashTimers = [];       // активные таймеры мигов
+let titleFlashTimers = [];
 let lastTitleGlitchTime = 0;
 let titleBeatTimeout = null;
+
+// === БАС-ЭФФЕКТ ===
+let lastBassImpactTime = 0;
+let bassShakeActive = false;
+let bassShakeTimeout = null;
+let bassZoomActive = false;
+let bassZoomTimeout = null;
+let shockwaveActive = false;
 
 /* ============================================================
    WEBAUDIO ANALYSER
@@ -679,6 +749,80 @@ function initAnalyser() {
 }
 
 /* ============================================================
+   БАС-УДАР: тряска, зум, shockwave, хрома, виньетка
+   ============================================================ */
+function triggerBassImpact(intensity) {
+  if (CONFIG.REDUCED_MOTION) return;
+  const now = performance.now();
+  if (now - lastBassImpactTime < CONFIG.BASS_IMPACT_MIN_INTERVAL) return;
+  lastBassImpactTime = now;
+
+  // intensity 0..1
+  const I = Math.max(0.2, Math.min(1, intensity));
+
+  // === 1. Тряска stage ===
+  if (!bassShakeActive) {
+    bassShakeActive = true;
+  }
+  const shakeAmt = CONFIG.BASS_SHAKE_PX * I;
+  const sx = (Math.random() - 0.5) * 2 * shakeAmt;
+  const sy = (Math.random() - 0.5) * 2 * shakeAmt;
+  // Зум
+  const zoom = 1 + CONFIG.BASS_ZOOM_AMOUNT * I;
+  stage.style.transform = `translate(${sx}px, ${sy}px) scale(${zoom})`;
+
+  // Откат через короткое время
+  if (bassShakeTimeout) clearTimeout(bassShakeTimeout);
+  bassShakeTimeout = setTimeout(() => {
+    stage.style.transition = 'transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1)';
+    stage.style.transform = 'translate(0, 0) scale(1)';
+    setTimeout(() => {
+      stage.style.transition = '';
+      bassShakeActive = false;
+    }, 180);
+  }, 40);
+
+  // === 2. Shockwave из центра ===
+  if (!shockwaveActive) {
+    shockwaveActive = true;
+    bassShockwave.style.transition = 'none';
+    bassShockwave.style.transform = 'translate(-50%, -50%) scale(0)';
+    bassShockwave.style.opacity = '0.9';
+    // Форсируем reflow
+    void bassShockwave.offsetWidth;
+    bassShockwave.style.transition =
+      `transform ${CONFIG.BASS_SHOCKWAVE_DURATION}ms cubic-bezier(0.15, 0.7, 0.3, 1),
+       opacity ${CONFIG.BASS_SHOCKWAVE_DURATION}ms ease-out`;
+    bassShockwave.style.transform =
+      `translate(-50%, -50%) scale(${1.5 + I * 1.2})`;
+    bassShockwave.style.opacity = '0';
+
+    setTimeout(() => {
+      shockwaveActive = false;
+    }, CONFIG.BASS_SHOCKWAVE_DURATION);
+  }
+
+  // === 3. Хроматическая аберрация ===
+  const chromaAmt = CONFIG.BASS_CHROMA_PX * I;
+  bassChroma.style.opacity = String(0.4 + I * 0.5);
+  bassChroma.style.background =
+    `linear-gradient(90deg,
+      rgba(255,0,60,${0.35 * I}) 0%,
+      transparent 25%,
+      transparent 75%,
+      rgba(0,220,255,${0.35 * I}) 100%)`;
+  setTimeout(() => {
+    bassChroma.style.opacity = '0';
+  }, 100 + I * 100);
+
+  // === 4. Виньетка ===
+  bassVignette.style.opacity = String(CONFIG.BASS_VIGNETTE_STRENGTH * I);
+  setTimeout(() => {
+    bassVignette.style.opacity = '0';
+  }, 200 + I * 200);
+}
+
+/* ============================================================
    ОБНОВЛЕНИЕ ЭНЕРГИЙ + ТЕМП
    ============================================================ */
 function updateAudioEnergy(now) {
@@ -704,6 +848,12 @@ function updateAudioEnergy(now) {
 
     const bassDelta = bassEnergy - prevBassEnergy;
     const timeSinceLastBeat = now - lastBeatTime;
+
+    // === БАС-УДАР на резкий скачок ===
+    if (bassDelta > 0.1 && bassEnergy > CONFIG.BASS_IMPACT_THRESHOLD) {
+      const intensity = Math.min(1, bassEnergy * 1.4 + bassDelta * 3);
+      triggerBassImpact(intensity);
+    }
 
     if (bassDelta > 0.08 && bassEnergy > 0.32 && timeSinceLastBeat > 180) {
       lastBeatTime = now;
@@ -737,7 +887,6 @@ function updateAudioEnergy(now) {
         setTimeout(() => { beatFlash.style.opacity = '0'; }, 80);
       }
 
-      // Глитч на бит (дополнительно к хаотичному миганию)
       if (CONFIG.TITLE_GLITCH_ON_BEAT && titleOverlay.classList.contains('visible')) {
         const timeSinceGlitch = now - lastTitleGlitchTime;
         if (timeSinceGlitch > CONFIG.TITLE_GLITCH_MIN_INTERVAL) {
@@ -807,6 +956,11 @@ function updateAudioEnergy(now) {
     midEnergy  = Math.max(0.05, Math.min(0.95, midEnergy));
     highEnergy = Math.max(0.05, Math.min(0.95, highEnergy));
 
+    // Псевдо-бас удары в авто-режиме
+    if (bassEnergy > 0.6 && Math.sin(t * 2) > 0.95) {
+      triggerBassImpact(bassEnergy * 0.8);
+    }
+
     beatPulse *= 0.9;
     highPulse *= 0.85;
 
@@ -848,7 +1002,7 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
-   TITLE — получение и установка текста (с обновлением при смене трека)
+   TITLE
    ============================================================ */
 function getTitleForTrack(index) {
   const t = CONFIG.PLAYLIST[index];
@@ -859,68 +1013,47 @@ function getTitleForTrack(index) {
   };
 }
 
-/**
- * Установить текст названия (без показа).
- * Вызывается при загрузке трека, чтобы при первом миге
- * название уже было правильным.
- */
 function setTitleText(index) {
   const { title, artist } = getTitleForTrack(index);
   titleText.textContent = title;
   titleText.dataset.text = title;
-  // Подпись "now playing · artist" снизу
   const sub = document.getElementById('titleSub');
   if (sub) {
     sub.textContent = artist ? `now playing · ${artist}` : 'now playing';
   }
 }
 
-/**
- * Одиночный "миг" названия — хаотичное появление на короткое время.
- * Применяет случайные смещения/повороты/масштабы для хаоса.
- */
 function flashTitleOnce() {
-  // Текст всегда актуален (обновляется в loadTrack)
-  // Случайные трансформации
   const tx = Math.random() < CONFIG.TITLE_OFFSET_CHANCE
-    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_OFFSET_RANGE
-    : 0;
+    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_OFFSET_RANGE : 0;
   const ty = Math.random() < CONFIG.TITLE_OFFSET_CHANCE
-    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_OFFSET_RANGE
-    : 0;
+    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_OFFSET_RANGE : 0;
   const rot = Math.random() < CONFIG.TITLE_ROTATE_CHANCE
-    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_ROTATE_RANGE
-    : 0;
+    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_ROTATE_RANGE : 0;
   const sc = Math.random() < CONFIG.TITLE_SCALE_CHANCE
-    ? CONFIG.TITLE_SCALE_RANGE[0] + Math.random() * (CONFIG.TITLE_SCALE_RANGE[1] - CONFIG.TITLE_SCALE_RANGE[0])
-    : 1;
+    ? CONFIG.TITLE_SCALE_RANGE[0] + Math.random() * (CONFIG.TITLE_SCALE_RANGE[1] - CONFIG.TITLE_SCALE_RANGE[0]) : 1;
 
   titleOverlay.style.transition = 'none';
   titleOverlay.style.transform =
     `translate(calc(-50% + ${tx}vw), calc(-50% + ${ty}vh)) rotate(${rot}deg) scale(${sc})`;
 
-  // Показываем
   titleOverlay.classList.remove('intro');
   titleOverlay.classList.add('visible');
 
-  // Случайный глитч при миге
   if (Math.random() < CONFIG.TITLE_GLITCH_ON_FLASH) {
     const gDur = CONFIG.TITLE_GLITCH_DURATION[0] +
       Math.random() * (CONFIG.TITLE_GLITCH_DURATION[1] - CONFIG.TITLE_GLITCH_DURATION[0]);
     triggerTitleGlitch(gDur);
   }
 
-  // Длительность мига
   const [minD, maxD] = CONFIG.TITLE_FLASH_DURATION;
   const dur = minD + Math.random() * (maxD - minD);
 
   const hideTimer = setTimeout(() => {
     titleOverlay.classList.remove('visible');
-    // Возвращаем трансформации в норму (плавно)
     titleOverlay.style.transition = 'opacity 0.15s ease';
     titleOverlay.style.transform = 'translate(-50%, -50%)';
 
-    // Шанс двойного мига: скрылось на мгновение — снова показалось
     if (Math.random() < CONFIG.TITLE_DOUBLE_FLASH_CHANCE) {
       const gap = 40 + Math.random() * 120;
       const doubleTimer = setTimeout(() => {
@@ -933,48 +1066,25 @@ function flashTitleOnce() {
   titleFlashTimers.push(hideTimer);
 }
 
-/**
- * Запуск серии хаотичных мигов.
- * Вызывается при старте трека и при переключении слоя с шансом.
- */
-function flashTitleChaos() {
-  if (!isPlaying || isPaused) return;
-  flashTitleOnce();
-}
-
-/**
- * Полный показ названия при старте трека (торжественное интро).
- * Показывает текст 2.5 сек, затем начинает хаотичное мелькание.
- */
 function showTitleIntro() {
-  // Сброс предыдущих таймеров
   clearAllTitleTimers();
   titleOverlay.style.transition = 'none';
   titleOverlay.style.transform = 'translate(-50%, -50%)';
   titleOverlay.classList.remove('glitch', 'beat');
   titleOverlay.classList.add('visible', 'intro');
 
-  // Через 2.5 сек начинается хаос
   const t1 = setTimeout(() => {
     titleOverlay.classList.remove('intro');
-    // Начинаем хаотичное мелькание: следующий миг через случайный интервал
     scheduleNextTitleFlash();
   }, 2500);
   titleFlashTimers.push(t1);
 }
 
-/**
- * Планирует следующий миг названия в случайный момент.
- * Так название мелькает хаотично на протяжении всей песни.
- */
 function scheduleNextTitleFlash() {
   if (!isPlaying || isPaused) return;
-
-  // Интервал зависит от темпа: быстрее трек — чаще мелькает
   const minI = 400;
   const maxI = 2500;
   const delay = maxI - (maxI - minI) * tempoNorm + Math.random() * 800;
-
   const t = setTimeout(() => {
     if (isPlaying && !isPaused) {
       flashTitleOnce();
@@ -993,9 +1103,6 @@ function clearAllTitleTimers() {
   titleOverlay.style.transition = 'opacity 0.15s ease';
 }
 
-/* ============================================================
-   Глитч (общий для мигов и бита)
-   ============================================================ */
 let glitchTimer = null;
 function triggerTitleGlitch(durationMs = 150) {
   if (CONFIG.REDUCED_MOTION) return;
@@ -1103,7 +1210,7 @@ async function preloadImages() {
 }
 
 /* ============================================================
-   СОЗДАНИЕ СЛОЁВ
+   СОЗДАНИЕ СЛОЁВ — ЧЁТКОСТЬ
    ============================================================ */
 function makeRandomState() {
   const pal = CONFIG.PALETTES[activePaletteIndex >= 0
@@ -1136,9 +1243,19 @@ function makeVoronoiPoints(n) {
 function createLayer(index) {
   const canvas = document.createElement('canvas');
   canvas.className = 'video-layer';
-  canvas.width = 960;
-  canvas.height = 540;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  // РЕЗКОСТЬ: разрешение canvas = реальный размер экрана × dpr
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(960, Math.floor(window.innerWidth * dpr * CONFIG.CANVAS_RES_SCALE));
+  const h = Math.max(540, Math.floor(window.innerHeight * dpr * CONFIG.CANVAS_RES_SCALE));
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext('2d', {
+    willReadFrequently: true,
+    alpha: false,           // Не нужен прозрачный фон → быстрее и резче
+    desynchronized: true,   // Меньше задержек рендера
+  });
   stage.appendChild(canvas);
 
   return {
@@ -1150,8 +1267,21 @@ function createLayer(index) {
   };
 }
 
+// Пересоздать размеры canvas при resize (для чёткости)
+function updateLayersResolution() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(960, Math.floor(window.innerWidth * dpr * CONFIG.CANVAS_RES_SCALE));
+  const h = Math.max(540, Math.floor(window.innerHeight * dpr * CONFIG.CANVAS_RES_SCALE));
+  layers.forEach(l => {
+    if (l.canvas.width !== w || l.canvas.height !== h) {
+      l.canvas.width = w;
+      l.canvas.height = h;
+    }
+  });
+}
+
 /* ============================================================
-   ГЕНЕРАТИВНЫЕ РЕЖИМЫ
+   ГЕНЕРАТИВНЫЕ РЕЖИМЫ — БЕЗ СГЛАЖИВАНИЯ
    ============================================================ */
 function drawScene(ctx, canvas, state, now) {
   const W = canvas.width, H = canvas.height;
@@ -1160,8 +1290,12 @@ function drawScene(ctx, canvas, state, now) {
   const bass = bassEnergy;
   const beat = beatPulse;
 
+  // РЕЗКОСТЬ: отключаем сглаживание растровых операций
+  ctx.imageSmoothingEnabled = false;
+
   ctx.save();
-  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = pal[0];
+  ctx.fillRect(0, 0, W, H);
 
   switch (state.mode) {
     case 0: drawNoise(ctx, W, H, state, time, pal); break;
@@ -1202,45 +1336,56 @@ function drawImage(ctx, W, H, state, time, pal) {
     return;
   }
 
-  const zoom = 1.15 + beatPulse * 0.15 + bassEnergy * 0.2 + highPulse * 0.08 + tempoNorm * 0.05;
-  const rot = (time * (0.05 + tempoNorm * 0.15) + state.seed) % (Math.PI * 2);
-  const shakeAmt = (beatPulse + highPulse) * (10 + tempoNorm * 15);
+  // Чётче: zoom минимальный, без размытия
+  const zoom = 1.05 + beatPulse * 0.06 + bassEnergy * 0.1 + highPulse * 0.04 + tempoNorm * 0.03;
+  const rot = (time * (0.02 + tempoNorm * 0.05) + state.seed) % (Math.PI * 2);
+  const shakeAmt = (beatPulse + highPulse) * (4 + tempoNorm * 8);
   const shakeX = (Math.random() - 0.5) * shakeAmt;
   const shakeY = (Math.random() - 0.5) * shakeAmt;
 
   ctx.save();
   ctx.translate(W / 2 + shakeX, H / 2 + shakeY);
-  ctx.rotate(Math.sin(rot) * (0.03 + tempoNorm * 0.05));
+  ctx.rotate(Math.sin(rot) * (0.015 + tempoNorm * 0.025));
   ctx.scale(zoom, zoom);
 
-  const hue = (state.hueShift + time * 30 + bassEnergy * 90 + tempoNorm * 120) % 360;
-  const dw = W * 1.2, dh = H * 1.2;
+  const hue = (state.hueShift + time * 15 + bassEnergy * 40 + tempoNorm * 60) % 360;
 
-  ctx.globalAlpha = 0.9;
+  // Умеренный запас, чтобы не мылить
+  const dw = W * 1.06;
+  const dh = H * 1.06;
+
+  // РЕЗКОСТЬ: полная непрозрачность, без smoothing
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = 1.0;
   ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
 
+  // Оверлей через screen, но слабее — не замыливает
   ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.25 + beatPulse * 0.25 + tempoNorm * 0.15;
-  ctx.fillStyle = `hsla(${hue}, 100%, 55%, 0.6)`;
+  ctx.globalAlpha = 0.1 + beatPulse * 0.15 + tempoNorm * 0.08;
+  ctx.fillStyle = `hsla(${hue}, 100%, 55%, 0.5)`;
   ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
 
-  if (beatPulse > 0.3 || highPulse > 0.3) {
-    ctx.globalAlpha = Math.max(beatPulse, highPulse) * 0.4;
-    const split = 8 * beatPulse * (1 + tempoNorm);
+  // RGB-split только на бит
+  if (beatPulse > 0.35 || highPulse > 0.35) {
+    ctx.globalAlpha = Math.max(beatPulse, highPulse) * 0.25;
+    const split = 4 * beatPulse * (1 + tempoNorm);
     ctx.drawImage(img, -dw / 2 + split, -dh / 2, dw, dh);
-    ctx.fillStyle = '#00ffff';
-    ctx.globalAlpha = highPulse * 0.3;
-    ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
   }
 
   ctx.restore();
+  ctx.imageSmoothingEnabled = false;
 }
 
 function drawNoise(ctx, W, H, state, time, pal) {
-  const img = ctx.createImageData(W, H);
+  // Шум в блочном разрешении → крупные пиксели → чётко видно
+  const blockSize = Math.max(2, Math.floor(Math.min(W, H) / 200));
+  const sw = Math.floor(W / blockSize);
+  const sh = Math.floor(H / blockSize);
+  const img = ctx.createImageData(sw, sh);
   const d = img.data;
   const hueBase = state.hueShift + time * 60 + bassEnergy * 180;
   const highBoost = 1 + highEnergy * 0.8;
+
   for (let i = 0; i < d.length; i += 4) {
     const v = 120 + Math.random() * 135 * highBoost;
     d[i]     = (v + hueBase) % 255;
@@ -1248,7 +1393,13 @@ function drawNoise(ctx, W, H, state, time, pal) {
     d[i + 2] = (255 - v * 0.4) % 255;
     d[i + 3] = 255;
   }
-  ctx.putImageData(img, 0, 0);
+
+  // Рисуем в маленький canvas, растягиваем без сглаживания
+  const small = document.createElement('canvas');
+  small.width = sw; small.height = sh;
+  small.getContext('2d').putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(small, 0, 0, W, H);
 }
 
 function drawStripes(ctx, W, H, state, time, pal) {
@@ -1258,18 +1409,18 @@ function drawStripes(ctx, W, H, state, time, pal) {
   const stripeW = 40 + 30 * Math.sin(time * 2 * speedMul + state.seed) + bassEnergy * 60;
   const offset = (time * 200 * speedMul * (1 + bassEnergy) + state.seed * 100) % (stripeW * 2);
   ctx.save();
-  ctx.translate(offset, 0);
+  ctx.translate(Math.round(offset), 0); // целочисленный сдвиг — резче
   for (let x = -stripeW * 2; x < W + stripeW * 2; x += stripeW * 2) {
     ctx.fillStyle = pal[1];
-    ctx.fillRect(x, 0, stripeW, H);
+    ctx.fillRect(Math.round(x), 0, Math.round(stripeW), H);
     ctx.fillStyle = pal[2];
-    ctx.fillRect(x + stripeW, 0, stripeW, H);
+    ctx.fillRect(Math.round(x + stripeW), 0, Math.round(stripeW), H);
   }
   ctx.restore();
   ctx.globalCompositeOperation = 'screen';
   const g = ctx.createLinearGradient(0, 0, W, H);
-  g.addColorStop(0, `rgba(255,255,255,${0.05 + midEnergy * 0.15})`);
-  g.addColorStop(1, `rgba(255,255,255,${0.15 + midEnergy * 0.3 + highPulse * 0.2})`);
+  g.addColorStop(0, `rgba(255,255,255,${0.05 + midEnergy * 0.1})`);
+  g.addColorStop(1, `rgba(255,255,255,${0.1 + midEnergy * 0.2 + highPulse * 0.15})`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
@@ -1286,9 +1437,9 @@ function drawRings(ctx, W, H, state, time, pal, beat) {
   for (let i = 0; i < n; i++) {
     const r = ((time * 80 * speedMul * (1 + bassEnergy * 2 + beat * 0.5) + i * 60 + state.seed * 50) % maxR);
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(Math.round(cx), Math.round(cy), Math.round(r), 0, Math.PI * 2);
     ctx.strokeStyle = pal[i % pal.length];
-    ctx.lineWidth = 18 + Math.sin(time + i) * 12 + bassEnergy * 25 + beat * 15;
+    ctx.lineWidth = Math.round(18 + Math.sin(time + i) * 12 + bassEnergy * 25 + beat * 15);
     ctx.globalAlpha = 0.75;
     ctx.stroke();
   }
@@ -1313,7 +1464,7 @@ function drawBlocks(ctx, W, H, state, time, pal) {
       const shiftAmt = 20 + bassEnergy * 60;
       const shiftX = Math.sin(time * 5 * speedMul + y) * shiftAmt;
       const shiftY = Math.cos(time * 4 * speedMul + x) * shiftAmt;
-      ctx.fillRect(x * cellW + shiftX, y * cellH + shiftY, cellW - 4, cellH - 4);
+      ctx.fillRect(Math.round(x * cellW + shiftX), Math.round(y * cellH + shiftY), cellW - 4, cellH - 4);
     }
   }
   ctx.globalAlpha = 1;
@@ -1337,19 +1488,19 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
     const t = (i + time * speed * 0.8) % rings;
     const progress = t / rings;
     const r = progress * Math.hypot(W, H) * 0.75;
-    const thickness = (4 + (1 - progress) * 18) * (1 + beat * 0.4);
+    const thickness = Math.round((4 + (1 - progress) * 18) * (1 + beat * 0.4));
     const hue = (hueBase + i * 18 + time * 60) % 360;
     const lightness = 55 + bass * 30 + beat * 15 + highEnergy * 20;
 
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(Math.round(cx), Math.round(cy), Math.round(r), 0, Math.PI * 2);
     ctx.strokeStyle = `hsla(${hue}, 100%, ${Math.min(90, lightness)}%, ${0.85 - progress * 0.6})`;
     ctx.lineWidth = thickness;
     ctx.stroke();
 
     if (beat > 0.4 && i % 3 === 0) {
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(Math.round(cx), Math.round(cy), Math.round(r), 0, Math.PI * 2);
       ctx.strokeStyle = `hsla(${hue}, 100%, 85%, ${(0.6 - progress * 0.5) * beat})`;
       ctx.lineWidth = thickness * 3;
       ctx.stroke();
@@ -1357,7 +1508,7 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
   }
 
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(Math.round(cx), Math.round(cy));
   const rays = 16;
   const raySpeed = time * (0.5 + beat * 1.5) * (1 + tempoNorm);
   for (let i = 0; i < rays; i++) {
@@ -1365,9 +1516,9 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
     const len = Math.hypot(W, H);
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+    ctx.lineTo(Math.round(Math.cos(a) * len), Math.round(Math.sin(a) * len));
     ctx.strokeStyle = `hsla(${(i * 25 + state.hueShift) % 360}, 100%, 65%, ${0.12 + midEnergy * 0.25 + beat * 0.15 + highPulse * 0.1})`;
-    ctx.lineWidth = 2 + midEnergy * 8 + beat * 6 + highPulse * 3;
+    ctx.lineWidth = Math.round(2 + midEnergy * 8 + beat * 6 + highPulse * 3);
     ctx.stroke();
   }
   ctx.restore();
@@ -1391,9 +1542,9 @@ function drawVHS(ctx, W, H, state, time, pal) {
   const strips = 20 + Math.floor(bassEnergy * 40);
   const speedMul = 1 + tempoNorm;
   for (let i = 0; i < strips; i++) {
-    const y = Math.random() * H;
-    const h = 1 + Math.random() * 8;
-    const shift = (Math.random() - 0.5) * 80 * speedMul * (1 + bassEnergy * 2);
+    const y = Math.round(Math.random() * H);
+    const h = Math.round(1 + Math.random() * 8);
+    const shift = Math.round((Math.random() - 0.5) * 80 * speedMul * (1 + bassEnergy * 2));
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = `hsla(${Math.random() * 60 + 180}, 100%, 65%, ${0.35 + Math.random() * 0.4})`;
     ctx.fillRect(shift, y, W, h);
@@ -1404,30 +1555,32 @@ function drawVHS(ctx, W, H, state, time, pal) {
 
   const dots = 200 + Math.floor(highEnergy * 1200);
   for (let i = 0; i < dots; i++) {
-    const x = Math.random() * W;
-    const y = Math.random() * H;
+    const x = Math.round(Math.random() * W);
+    const y = Math.round(Math.random() * H);
     ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.5})`;
-    ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 3);
+    ctx.fillRect(x, y, Math.round(1 + Math.random() * 3), Math.round(1 + Math.random() * 3));
   }
 
   if (Math.random() < 0.3 + highEnergy * 0.6) {
-    const y = Math.random() * H;
-    const tearH = 5 + Math.random() * 40;
-    const offset = (Math.random() - 0.5) * 200 * speedMul;
+    const y = Math.round(Math.random() * H);
+    const tearH = Math.round(5 + Math.random() * 40);
+    const offset = Math.round((Math.random() - 0.5) * 200 * speedMul);
     try {
       const img = ctx.getImageData(0, y, W, tearH);
       ctx.putImageData(img, offset, y);
     } catch (e) { /* ignore */ }
   }
 
-  ctx.fillStyle = 'rgba(0,0,0,0.06)';
-  for (let y = 0; y < H; y += 4) {
+  // Без сглаженного scanline — редкие чёткие линии
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  for (let y = 0; y < H; y += 3) {
     ctx.fillRect(0, y, W, 1);
   }
 }
 
 function drawPlasma(ctx, W, H, state, time, pal) {
-  const pw = 80, ph = 45;
+  // Плазма теперь тоже чётче — без сглаживания при растяжении
+  const pw = 120, ph = 68;
   const small = document.createElement('canvas');
   small.width = pw; small.height = ph;
   const sctx = small.getContext('2d');
@@ -1451,7 +1604,7 @@ function drawPlasma(ctx, W, H, state, time, pal) {
     }
   }
   sctx.putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = false; // резкие блоки
   ctx.drawImage(small, 0, 0, W, H);
 }
 
@@ -1549,7 +1702,7 @@ function triggerChaosFlash() {
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — плюс хаотичный миг названия
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — без blur для чёткости
    ============================================================ */
 function switchRandomLayer() {
   const idx = Math.floor(Math.random() * layers.length);
@@ -1559,12 +1712,9 @@ function switchRandomLayer() {
   if (Math.random() < CONFIG.PALETTE_JUMP_CHANCE) {
     activePaletteIndex = -1;
   }
-
   if (Math.random() < CONFIG.GLITCH_CHANCE * (0.5 + tempo)) {
     triggerChaosFlash();
   }
-
-  // === Хаотичный миг названия при переключении слоя ===
   if (isPlaying && !isPaused && Math.random() < CONFIG.TITLE_FLASH_ON_SWITCH) {
     flashTitleOnce();
   }
@@ -1594,24 +1744,22 @@ function switchRandomLayer() {
         el.style.filter = 'none';
       } else {
         const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
-        const rotate = (Math.random() - 0.5) * (4 + tempo * 22);
-        const skewX = (Math.random() - 0.5) * (2 + tempo * 18);
-        const skewY = (Math.random() - 0.5) * (2 + tempo * 18);
+        const rotate = (Math.random() - 0.5) * (2 + tempo * 10);   // мягче
+        const skewX = (Math.random() - 0.5) * (1 + tempo * 8);
+        const skewY = (Math.random() - 0.5) * (1 + tempo * 8);
 
         const maxShift = (scale - 1) * 50;
-        const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 35, maxShift);
-        const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 35, maxShift);
+        const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 25, maxShift);
+        const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 25, maxShift);
 
         const hue = Math.random() * 360;
-        const sat = 1.0 + Math.random() * 0.8 + tempo * 0.6;
-        const con = 1.0 + Math.random() * 0.6 + tempo * 0.5;
-        const bright = 1.0 + Math.random() * 0.3 + tempo * 0.2;
+        // Не понижаем sat/con/bright ниже 1 — иначе мутнеет/темнеет
+        const sat = 1.0 + Math.random() * 0.6 + tempo * 0.4;
+        const con = 1.05 + Math.random() * 0.4 + tempo * 0.3;   // немного повышаем контраст
+        const bright = 1.0 + Math.random() * 0.2 + tempo * 0.15;
 
-        let blur = '';
-        if (Math.random() < 0.08 + tempo * 0.2) {
-          blur = `blur(${Math.min(CONFIG.MAX_BLUR_PX, 1 + tempo * 4).toFixed(1)}px)`;
-        }
-
+        // Blur полностью убран — всегда чётко
+        // (MAX_BLUR_PX = 0 в конфиге)
         const mirror = Math.random() < CONFIG.MIRROR_CHANCE ? -1 : 1;
 
         el.style.clipPath = '';
@@ -1619,7 +1767,7 @@ function switchRandomLayer() {
         el.style.transform =
           `scale(${scale * mirror}, ${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
         el.style.filter =
-          `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) brightness(${bright}) ${blur}`;
+          `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) brightness(${bright})`;
       }
       el.style.opacity = '1';
       el.style.zIndex = '1';
@@ -1646,9 +1794,9 @@ function animate(now) {
     layers.forEach((layer) => {
       if (layer.canvas.style.opacity === '1') {
         layer.draw(layer.state, now);
-        if (!CONFIG.REDUCED_MOTION && Math.random() < 0.04) {
+        if (!CONFIG.REDUCED_MOTION && Math.random() < 0.03) {
           const el = layer.canvas;
-          const pulseScale = Math.max(CONFIG.MIN_SCALE, 1 + beatPulse * 0.12 + bassEnergy * 0.08);
+          const pulseScale = Math.max(CONFIG.MIN_SCALE, 1 + beatPulse * 0.06 + bassEnergy * 0.04);
           el.style.transform = el.style.transform.replace(
             /scale\(([\d.]+)(?:,\s*([\d.]+))?\)/,
             (m, sx, sy) => {
@@ -1689,7 +1837,6 @@ function scheduleFlicker() {
 
     if (Math.random() < switchChance) {
       switchRandomLayer();
-
       if (Math.random() < CONFIG.DOUBLE_SWITCH_CHANCE) {
         setTimeout(() => {
           if (isPlaying && !isPaused) switchRandomLayer();
@@ -1721,11 +1868,8 @@ function loadTrack(index) {
   currentTrack = ((index % CONFIG.PLAYLIST.length) + CONFIG.PLAYLIST.length) % CONFIG.PLAYLIST.length;
   audio.src = CONFIG.PLAYLIST[currentTrack].src;
   audio.load();
-
-  // === КЛЮЧЕВОЙ МОМЕНТ: обновляем текст названия при смене трека ===
   setTitleText(currentTrack);
   console.log('🎵 Загрузка трека:', CONFIG.PLAYLIST[currentTrack].title);
-
   resetTempo();
 }
 
@@ -1743,24 +1887,17 @@ function resetTempo() {
 function nextTrack() {
   const prevTrack = currentTrack;
   loadTrack(currentTrack + 1);
-
-  // Если трек не изменился (например, 1 трек в плейлисте) — просто перезапускаем
   if (prevTrack === currentTrack && CONFIG.PLAYLIST.length === 1) {
     audio.currentTime = 0;
   }
-
-  // Сброс всех хаотичных мигов названия
   clearAllTitleTimers();
-
   if (isPlaying && !isPaused) {
     audio.play().catch(err => {
       console.warn('Не удалось воспроизвести следующий трек:', err);
       setTimeout(() => audio.play().catch(() => {}), 1000);
     });
-    // Показываем интро для нового трека
     showTitleIntro();
   } else {
-    // Если на паузе — просто устанавливаем текст без показа
     setTitleText(currentTrack);
   }
 }
@@ -1778,7 +1915,7 @@ audio.addEventListener('error', (e) => {
 });
 
 /* ============================================================
-   ПОКАЗ/СКРЫТИЕ UI
+   ПОКАЗ/СКРЫТИЕ
    ============================================================ */
 function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
   statusEl.classList.add('visible');
@@ -1808,17 +1945,14 @@ function startPlayback() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
   playBtn.classList.add('hidden');
-
   showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
   showProgressTemporarily(2500);
-
   spectrumWrap.classList.add('visible');
 
   hintEl.classList.add('visible');
   setTimeout(() => hintEl.classList.remove('visible'), 4000);
 
   if (!audio.src) loadTrack(0);
-  // На всякий случай пересинхронизируем текст названия
   setTitleText(currentTrack);
 
   const playPromise = audio.play();
@@ -1837,10 +1971,7 @@ function startPlayback() {
 
   switchRandomLayer();
   startChaos();
-
   layers.forEach(l => l.draw(l.state, performance.now()));
-
-  // Торжественный показ названия + запуск хаотичного мелькания
   showTitleIntro();
 }
 
@@ -1854,7 +1985,6 @@ function togglePause() {
     progressWrap.classList.add('visible');
     if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
 
-    // На паузе показываем название постоянно
     clearAllTitleTimers();
     titleOverlay.classList.remove('intro', 'glitch', 'beat');
     titleOverlay.style.transform = 'translate(-50%, -50%)';
@@ -1865,7 +1995,6 @@ function togglePause() {
     showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
     showProgressTemporarily(2500);
 
-    // Снова хаотичное мелькание
     clearAllTitleTimers();
     scheduleNextTitleFlash();
   }
@@ -1884,7 +2013,6 @@ let tapTimer = null;
 
 stage.addEventListener('click', (e) => {
   if (!isPlaying) return;
-
   const now = Date.now();
   if (now - lastTapTime < 300) {
     if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
@@ -1893,12 +2021,9 @@ stage.addEventListener('click', (e) => {
     return;
   }
   lastTapTime = now;
-
   tapTimer = setTimeout(() => {
     switchRandomLayer();
-    if (Math.random() < 0.5) {
-      setTimeout(() => switchRandomLayer(), 50);
-    }
+    if (Math.random() < 0.5) setTimeout(() => switchRandomLayer(), 50);
     tapTimer = null;
   }, 300);
 });
@@ -1915,7 +2040,6 @@ stage.addEventListener('touchend', (e) => {
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
   const dt = Date.now() - touchStartTime;
-
   if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 600) {
     activePaletteIndex = (activePaletteIndex + 1) % CONFIG.PALETTES.length;
     const active = layers.find(l => l.canvas.style.opacity === '1');
@@ -1987,7 +2111,6 @@ async function initLayers() {
 async function init() {
   await initLayers();
   loadTrack(0);
-  // Устанавливаем текст ещё до старта — при первом миге будет правильное название
   setTitleText(0);
 }
 
@@ -1995,6 +2118,8 @@ init();
 
 window.addEventListener('resize', () => {
   resizeSpectrum();
+  // Обновляем разрешение canvas при ресайзе — для чёткости
+  updateLayersResolution();
 });
 
 document.addEventListener('visibilitychange', () => {
