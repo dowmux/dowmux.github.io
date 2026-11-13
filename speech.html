@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Русские субтитры - бегущая строка</title>
+    <title>Русские субтитры — лента снизу вверх</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -14,51 +14,69 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-end; /* лента прижата к низу */
             align-items: center;
         }
 
-        /* Контейнер бегущей строки: горизонтальное отображение */
-        #marquee-container {
+        /* Окно субтитров: фиксированная высота, скрывает всё, что вышло за верх */
+        #subtitles-window {
             width: 100%;
+            height: 40vh;               /* сколько места занимает лента */
             overflow: hidden;
-            white-space: nowrap;
-            position: relative;
-            padding: 20px 0;
-            background: rgba(0, 0, 0, 0.9);
-            border-top: 1px solid #333;
-            border-bottom: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;  /* новые строки прижимаются к низу */
+            padding: 20px 24px;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.85) 40%);
+            /* маска сверху для плавного исчезновения старых строк */
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
         }
 
-        #marquee-text {
-            display: inline-block;
-            font-size: 48px;
-            font-weight: bold;
+        #lines {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.35s ease;
+        }
+
+        .sub-line {
+            font-size: 34px;
+            line-height: 1.25;
+            font-weight: 600;
             color: #fff;
-            padding-left: 100%; /* Начальная позиция за правым краем */
-            will-change: transform;
-            /* CSS-анимация бегущей строки */
-            animation: marquee 8s linear infinite;
-            /* Начальная скорость, будет скорректирована через JS */
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            word-wrap: break-word;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: lineIn 0.35s ease forwards;
         }
 
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
+        /* Последняя (самая нижняя) строка — акцентная, чуть ярче */
+        .sub-line:last-child {
+            color: #ffffff;
         }
 
-        /* Панель управления */
+        /* Предыдущие — приглушены */
+        .sub-line:not(:last-child) {
+            color: #bbbbbb;
+        }
+
+        @keyframes lineIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .controls {
             position: fixed;
-            bottom: 30px;
+            bottom: 20px;
             display: flex;
             gap: 20px;
             z-index: 10;
         }
 
         button {
-            padding: 16px 32px;
-            font-size: 20px;
+            padding: 14px 30px;
+            font-size: 18px;
             font-weight: bold;
             border: none;
             border-radius: 50px;
@@ -73,120 +91,159 @@
         #status {
             position: fixed;
             top: 20px;
-            font-size: 16px;
+            font-size: 15px;
             color: #888;
             text-align: center;
             width: 100%;
             padding: 0 20px;
         }
+
+        /* Скрытый элемент для измерения ширины текста */
+        #measure {
+            position: absolute;
+            visibility: hidden;
+            white-space: nowrap;
+            font-size: 34px;
+            font-weight: 600;
+            font-family: system-ui, -apple-system, sans-serif;
+            left: -9999px;
+            top: 0;
+        }
     </style>
 </head>
 <body>
 
-    <div id="status">Нажмите «Начать», чтобы включить распознавание речи</div>
+    <div id="status">Нажмите «Начать» для распознавания русской речи</div>
 
-    <!-- Контейнер бегущей строки -->
-    <div id="marquee-container">
-        <span id="marquee-text">Ожидание речи...</span>
+    <!-- Окно с лентой субтитров -->
+    <div id="subtitles-window">
+        <div id="lines"></div>
     </div>
 
-    <!-- Кнопки управления -->
     <div class="controls">
         <button id="startBtn">Начать</button>
         <button id="stopBtn">Остановить</button>
     </div>
 
+    <span id="measure"></span>
+
     <script>
         (function() {
-            const statusEl = document.getElementById('status');
-            const marqueeText = document.getElementById('marquee-text');
-            const startBtn = document.getElementById('startBtn');
-            const stopBtn = document.getElementById('stopBtn');
+            const statusEl   = document.getElementById('status');
+            const linesEl    = document.getElementById('lines');
+            const measureEl  = document.getElementById('measure');
+            const startBtn   = document.getElementById('startBtn');
+            const stopBtn    = document.getElementById('stopBtn');
 
             let recognition = null;
             let isListening = false;
 
-            // Проверка поддержки Web Speech API
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            // Сколько строк максимум держим на экране
+            const MAX_LINES = 4;
 
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                statusEl.textContent = 'Ваш браузер не поддерживает распознавание речи. Используйте Chrome или Safari.';
+                statusEl.textContent = 'Браузер не поддерживает распознавание речи. Используйте Chrome или Safari.';
                 startBtn.disabled = true;
                 return;
             }
 
-            // Инициализация распознавания
-            recognition = new SpeechRecognition();
-            recognition.lang = 'ru-RU';          // Русский язык
-            recognition.continuous = true;        // Непрерывное распознавание
-            recognition.interimResults = true;    // Показывать промежуточные результаты (для эффекта реального времени)
-            recognition.maxAlternatives = 1;
+            // --- Разбивка текста на строки по ширине контейнера ---
+            function wrapText(text, maxWidth) {
+                const words = text.split(/\s+/);
+                const lines = [];
+                let current = '';
 
-            // Обработка результатов распознавания
-            recognition.onresult = function(event) {
-                let finalTranscript = '';
-                let interimTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript;
+                for (const word of words) {
+                    const test = current ? current + ' ' + word : word;
+                    measureEl.textContent = test;
+                    if (measureEl.offsetWidth <= maxWidth || !current) {
+                        current = test;
                     } else {
-                        interimTranscript += transcript;
+                        lines.push(current);
+                        current = word;
                     }
                 }
+                if (current) lines.push(current);
+                return lines;
+            }
 
-                // Формирование отображаемого текста: финальный + промежуточный
-                const displayText = finalTranscript + interimTranscript;
+            // --- Добавить новый текст в ленту ---
+            function appendText(text) {
+                text = text.trim();
+                if (!text) return;
 
-                if (displayText.trim()) {
-                    marqueeText.textContent = displayText.trim();
-                    // Перезапуск CSS-анимации для корректного отображения новой длины текста
-                    restartMarquee();
+                // Ширина, доступная для текста (за вычетом padding окна)
+                const winWidth = document.getElementById('subtitles-window').clientWidth - 48;
+
+                const lines = wrapText(text, winWidth);
+
+                for (const lineText of lines) {
+                    const div = document.createElement('div');
+                    div.className = 'sub-line';
+                    div.textContent = lineText;
+                    linesEl.appendChild(div);
+                }
+
+                // Ограничиваем количество строк: удаляем верхние
+                while (linesEl.children.length > MAX_LINES) {
+                    linesEl.removeChild(linesEl.firstChild);
+                }
+
+                // Плавно прокручиваем, чтобы последняя строка была видна
+                // (когда строк больше, чем помещается в окно)
+                const windowEl = document.getElementById('subtitles-window');
+                const overflow = linesEl.scrollHeight - windowEl.clientHeight;
+                // Если контент выше окна — сдвигаем вверх на величину переполнения
+                if (overflow > 0) {
+                    linesEl.style.transform = `translateY(-${overflow}px)`;
+                } else {
+                    linesEl.style.transform = 'translateY(0)';
+                }
+            }
+
+            // --- Обработка промежуточного текста (в реальном времени) ---
+            let lastFinalWordCount = 0;
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = function(event) {
+                let finalText = '';
+                let interimText = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const t = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) finalText += t;
+                    else interimText += t;
+                }
+
+                // Финальные фразы добавляем в ленту как новые строки
+                if (finalText.trim()) {
+                    appendText(finalText.trim());
                 }
             };
 
-            recognition.onerror = function(event) {
-                console.error('Ошибка распознавания:', event.error);
-                if (event.error === 'not-allowed') {
-                    statusEl.textContent = 'Доступ к микрофону запрещён. Разрешите в настройках браузера.';
-                } else if (event.error === 'no-speech') {
-                    statusEl.textContent = 'Речь не обнаружена, слушаю...';
-                } else {
-                    statusEl.textContent = 'Ошибка: ' + event.error;
-                }
+            recognition.onerror = function(e) {
+                console.error(e);
+                if (e.error === 'not-allowed') statusEl.textContent = 'Доступ к микрофону запрещён.';
+                else if (e.error === 'no-speech') statusEl.textContent = 'Речь не обнаружена, слушаю...';
             };
 
             recognition.onend = function() {
-                // Если всё ещё в режиме прослушивания, перезапустить (для непрерывной работы)
-                if (isListening) {
-                    try { recognition.start(); } catch (e) {}
-                }
+                if (isListening) { try { recognition.start(); } catch(e) {} }
             };
 
-            // Перезапуск анимации (для пересчёта скорости по новой длине текста)
-            function restartMarquee() {
-                marqueeText.style.animation = 'none';
-                // Форсировать пересчёт стилей
-                void marqueeText.offsetWidth;
-                marqueeText.style.animation = 'marquee 8s linear infinite';
-            }
-
-            // Старт
             startBtn.addEventListener('click', function() {
                 statusEl.textContent = 'Слушаю... Говорите по-русски.';
                 startBtn.style.display = 'none';
                 stopBtn.style.display = 'inline-block';
                 isListening = true;
-
-                try {
-                    recognition.start();
-                } catch (e) {
-                    // Если уже запущено, игнорировать
-                }
+                try { recognition.start(); } catch(e) {}
             });
 
-            // Стоп
             stopBtn.addEventListener('click', function() {
                 isListening = false;
                 recognition.stop();
@@ -194,9 +251,6 @@
                 stopBtn.style.display = 'none';
                 startBtn.style.display = 'inline-block';
             });
-
-            // Разрешение на микрофон требуется для Web Speech API
-            // При первом нажатии браузер запросит разрешение автоматически
         })();
     </script>
 </body>
