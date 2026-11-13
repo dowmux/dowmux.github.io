@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Русские субтитры — обычный режим и бегущая строка</title>
+    <title>Русские субтитры — лента и бегущая строка</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -25,7 +25,7 @@
             overscroll-behavior: none;
         }
 
-        /* Окно субтитров */
+        /* Окно субтитров — почти на весь экран */
         #subtitles-window {
             position: fixed;
             left: 0;
@@ -71,7 +71,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Режим бегущей строки: горизонтальная лента на весь экран */
+        /* Режим бегущей строки */
         #marquee-container {
             display: none;
             width: 100%;
@@ -81,9 +81,7 @@
             align-self: center;
         }
 
-        #marquee-container.active {
-            display: block;
-        }
+        #marquee-container.active { display: block; }
 
         #marquee-text {
             display: inline-block;
@@ -101,7 +99,6 @@
             100% { transform: translateX(-100%); }
         }
 
-        /* В режиме бегущей строки вертикальная лента скрыта */
         body.marquee-mode #lines { display: none; }
         body.marquee-mode #subtitles-window { justify-content: center; }
 
@@ -138,7 +135,6 @@
         #startBtn { background: #007aff; grid-column: 1 / 2; grid-row: 1 / 2; }
         #stopBtn  { background: #ff3b30; grid-column: 2 / 3; grid-row: 1 / 2; display: none; }
         #clearBtn { background: #3a3a3c; grid-column: 3 / 4; grid-row: 1 / 2; }
-        /* Кнопка режима бегущей строки — на всю ширину второго ряда */
         #marqueeBtn { background: #5856d6; grid-column: 1 / 4; grid-row: 2 / 3; }
         #marqueeBtn.active { background: #34c759; }
 
@@ -217,9 +213,13 @@
             let isListening = false;
 
             // Состояние
-            let marqueeMode = false;      // включён ли режим бегущей строки
-            let addedWords = [];          // все добавленные слова (для дедупликации)
+            let marqueeMode = false;
+            let addedWords = [];
             let addedWordsSet = new Set();
+
+            // Таймер автоочистки
+            let clearTimer = null;
+            const AUTO_CLEAR_MS = 10000; // 10 секунд тишины после конца фразы
 
             const MAX_LINES = 8;
 
@@ -230,6 +230,20 @@
                 return;
             }
 
+            // ---------- Таймер автоочистки ----------
+            function scheduleClear() {
+                if (clearTimer) clearTimeout(clearTimer);
+                clearTimer = setTimeout(() => {
+                    clearLines();
+                    statusEl.textContent = '10 секунд тишины — текст очищен';
+                }, AUTO_CLEAR_MS);
+            }
+
+            function cancelClear() {
+                if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; }
+            }
+
+            // ---------- Утилиты ----------
             function getMaxTextWidth() {
                 return windowEl.clientWidth - 32;
             }
@@ -257,7 +271,7 @@
                 linesEl.style.transform = overflow > 0 ? `translateY(-${overflow}px)` : 'translateY(0)';
             }
 
-            // --- Дедупликация ---
+            // ---------- Дедупликация ----------
             function extractNewWords(transcript) {
                 const incoming = transcript
                     .trim()
@@ -287,7 +301,7 @@
                 return newWords;
             }
 
-            // --- Рендер обычного режима ---
+            // ---------- Рендеры ----------
             function renderLines() {
                 linesEl.innerHTML = '';
                 const allText = addedWords.join(' ');
@@ -306,7 +320,6 @@
                 requestAnimationFrame(scrollToBottom);
             }
 
-            // --- Рендер бегущей строки ---
             function renderMarquee() {
                 const text = addedWords.join(' ');
                 if (!text) {
@@ -316,25 +329,20 @@
                 }
                 marqueeTextEl.textContent = text;
 
-                // Скорость: примерно 8 символов в секунду (комфортно читать)
-                // Минимум 10 секунд, чтобы даже короткий текст не пролетал мгновенно
                 const charsPerSecond = 8;
                 const duration = Math.max(10, text.length / charsPerSecond);
 
-                // Перезапуск анимации
                 marqueeTextEl.style.animation = 'none';
                 void marqueeTextEl.offsetWidth;
                 marqueeTextEl.style.animation = `marqueeScroll ${duration}s linear infinite`;
             }
 
             function renderAll() {
-                if (marqueeMode) {
-                    renderMarquee();
-                } else {
-                    renderLines();
-                }
+                if (marqueeMode) renderMarquee();
+                else renderLines();
             }
 
+            // ---------- Добавление / очистка ----------
             function appendWords(newWords) {
                 if (!newWords.length) return;
 
@@ -357,9 +365,9 @@
                 marqueeTextEl.style.animation = 'none';
                 addedWords = [];
                 addedWordsSet = new Set();
+                cancelClear();
             }
 
-            // --- Переключение режима бегущей строки ---
             function toggleMarqueeMode() {
                 marqueeMode = !marqueeMode;
 
@@ -379,6 +387,7 @@
                 statusEl.textContent = marqueeMode ? 'Режим бегущей строки включён' : 'Обычный режим';
             }
 
+            // ---------- Распознавание ----------
             recognition = new SpeechRecognition();
             recognition.lang = 'ru-RU';
             recognition.continuous = true;
@@ -386,14 +395,24 @@
 
             recognition.onresult = function(event) {
                 let finalText = '';
+                let hasInterim = false;
+
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
                         finalText += event.results[i][0].transcript + ' ';
+                    } else {
+                        hasInterim = true;
                     }
                 }
+
                 if (finalText.trim()) {
+                    // Фраза закончена: добавляем новые слова и запускаем таймер тишины
                     const newWords = extractNewWords(finalText);
                     appendWords(newWords);
+                    scheduleClear();
+                } else if (hasInterim) {
+                    // Человек ещё говорит — сбрасываем таймер, чтобы не очистить посреди фразы
+                    if (clearTimer) scheduleClear();
                 }
             };
 
@@ -407,6 +426,7 @@
                 if (isListening) { try { recognition.start(); } catch(e) {} }
             };
 
+            // ---------- Кнопки ----------
             startBtn.addEventListener('click', function() {
                 statusEl.textContent = 'Слушаю... Говорите по-русски.';
                 startBtn.style.display = 'none';
@@ -418,6 +438,7 @@
             stopBtn.addEventListener('click', function() {
                 isListening = false;
                 recognition.stop();
+                cancelClear(); // текст останется, пока не нажмут «Очистить»
                 statusEl.textContent = 'Остановлено — текст остаётся на экране';
                 stopBtn.style.display = 'none';
                 startBtn.style.display = 'block';
@@ -430,6 +451,7 @@
 
             marqueeBtn.addEventListener('click', toggleMarqueeMode);
 
+            // ---------- Реакция на поворот/изменение размера ----------
             window.addEventListener('orientationchange', function() {
                 renderAll();
             });
