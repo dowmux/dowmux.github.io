@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chaotic Video Player — Tempo Driven</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: system-ui, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #stage {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    background: #000;
+    cursor: pointer;
+  }
+
+  .video-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform, opacity, filter;
+    image-rendering: auto;
+  }
+
+  .video-layer.pixelated {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  #spectrumWrap {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100vw;
+    height: 220px;
+    z-index: 800;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    mix-blend-mode: screen;
+  }
+  #spectrumWrap.visible { opacity: 1; }
+  #spectrumCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  #playBtn {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.8);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    z-index: 2000;
+    transition: all 0.4s ease;
+    display: flex; align-items: center; justify-content: center;
+    animation: pulse 2s infinite;
+  }
+  #playBtn:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(255,255,255,0.2);
+    border-color: #fff;
+  }
+  #playBtn svg {
+    width: 45px; height: 45px;
+    fill: #fff; margin-left: 8px;
+    transition: transform 0.3s ease;
+  }
+  #playBtn.hidden {
+    opacity: 0; pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.5);
+    animation: none;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+    50%      { box-shadow: 0 0 0 30px rgba(255,255,255,0); }
+  }
+
+  #status {
+    position: fixed;
+    bottom: 240px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.85);
+    font-size: 22px;
+    letter-spacing: 4px;
+    z-index: 1500;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    text-align: center;
+    white-space: nowrap;
+    text-shadow: 0 0 20px rgba(0,0,0,0.9), 0 0 30px rgba(0,255,255,0.5);
+  }
+  #status.visible { opacity: 1; }
+
+  #hint {
+    position: fixed;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.5);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    z-index: 1500;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    text-align: center;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 20px;
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+  }
+  #hint.visible { opacity: 1; }
+
+  #audioWarn {
+    position: fixed;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,200,80,0.85);
+    font-size: 10px;
+    letter-spacing: 1px;
+    z-index: 1500;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 12px;
+    white-space: nowrap;
+    max-width: 90vw;
+    text-align: center;
+  }
+  #audioWarn.visible { opacity: 1; }
+
+  #progressWrap {
+    position: fixed;
+    bottom: 220px; left: 0;
+    width: 100%;
+    height: 40px;
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 14px;
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+  #progressWrap.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  #progressBar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  #progressFill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #0ff, #f0f, #ff0);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+  }
+
+  #timeLabel {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    min-width: 90px;
+  }
+
+  #nextBtn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.5);
+    background: rgba(0,0,0,0.4);
+    color: #fff;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  #nextBtn:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: #fff;
+    transform: scale(1.1);
+  }
+  #nextBtn svg { width: 14px; height: 14px; fill: #fff; }
+
+  #pauseOverlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1800;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #pauseOverlay.visible {
+    display: flex;
+    opacity: 1;
+  }
+  #pauseOverlay svg {
+    width: 80px; height: 80px;
+    fill: rgba(255,255,255,0.9);
+    margin-left: 8px;
+  }
+
+  #beatFlash {
+    position: fixed; inset: 0;
+    background: #fff;
+    opacity: 0;
+    z-index: 700;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    transition: opacity 0.06s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #playBtn { animation: none; }
+    .video-layer { transition: opacity 0.5s ease !important; }
+    #beatFlash { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<div id="beatFlash"></div>
+
+<div id="spectrumWrap">
+  <canvas id="spectrumCanvas"></canvas>
+</div>
+
+<button id="playBtn" aria-label="Play">
+  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+</button>
+
+<div id="status">▶</div>
+
+<div id="hint">тап — новый кадр · свайп — палитра · двойной тап — пауза</div>
+
+<div id="audioWarn"></div>
+
+<div id="progressWrap">
+  <span id="timeLabel">0:00 / 0:00</span>
+  <div id="progressBar">
+    <div id="progressFill"></div>
+  </div>
+  <button id="nextBtn" aria-label="Next track" title="Следующий трек">
+    <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+  </button>
+</div>
+
+<div id="pauseOverlay">
+  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+</div>
+
+<audio id="audio" preload="auto" crossorigin="anonymous"></audio>
+
+<script>
+/* ============================================================
+   КОНФИГУРАЦИЯ
+   ============================================================ */
+const CONFIG = {
+  LAYER_COUNT: 8,
+  MAX_FPS: 60,
+  REDUCED_MOTION: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+
+  SPECTRUM_BARS: 128,
+
+  TREBLE_BOOST_DB: 12,
+  TREBLE_FREQ_HZ: 3000,
+
+  // === ТЕМП ===
+  // BPM, ниже которого темп считается "медленным" (редкая смена)
+  BPM_MIN: 60,
+  // BPM, выше которого темп считается "быстрым" (жёсткий фликер)
+  BPM_MAX: 160,
+  // Диапазон интервала смены кадра при медленном темпе (мс)
+  FLICKER_SLOW: [600, 1200],
+  // Диапазон интервала смены кадра при быстром темпе (мс)
+  FLICKER_FAST: [60, 140],
+
+  PALETTES: [
+    ['#ff004c', '#001eff', '#00fff0'],
+    ['#f9f871', '#ff6f91', '#845ec2'],
+    ['#00c9a7', '#4d8076', '#fbea99'],
+    ['#fc5c7d', '#6a82fb', '#fffb7d'],
+    ['#f83600', '#f9d423', '#00b4db'],
+    ['#1f4037', '#99f2c8', '#ff512f'],
+    ['#0f2027', '#203a43', '#2c5364'],
+    ['#f12711', '#f5af19', '#12c2e9'],
+    ['#e96443', '#904e95', '#00f2fe'],
+    ['#fa709a', '#fee140', '#30cfd0'],
+  ],
+
+  PLAYLIST: [
+    {
+      src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
+      title: 'VK Track',
+    },
+    { src: 'track.mp3', title: 'Local Fallback' },
+  ],
+
+  IMAGE_URLS: [
+    'https://picsum.photos/seed/chaos1/960/540',
+    'https://picsum.photos/seed/chaos2/960/540',
+    'https://picsum.photos/seed/chaos3/960/540',
+    'https://picsum.photos/seed/chaos4/960/540',
+    'https://picsum.photos/seed/chaos5/960/540',
+    'https://picsum.photos/seed/chaos6/960/540',
+    'https://picsum.photos/seed/chaos7/960/540',
+    'https://picsum.photos/seed/chaos8/960/540',
+    'https://picsum.photos/seed/chaos9/960/540',
+    'https://picsum.photos/seed/chaos10/960/540',
+    'https://picsum.photos/seed/chaos11/960/540',
+    'https://picsum.photos/seed/chaos12/960/540',
+    'https://picsum.photos/seed/chaos13/960/540',
+    'https://picsum.photos/seed/chaos14/960/540',
+    'https://picsum.photos/seed/chaos15/960/540',
+    'https://picsum.photos/seed/chaos16/960/540',
+  ],
+};
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const stage = document.getElementById('stage');
+const playBtn = document.getElementById('playBtn');
+const audio = document.getElementById('audio');
+const statusEl = document.getElementById('status');
+const hintEl = document.getElementById('hint');
+const audioWarnEl = document.getElementById('audioWarn');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const timeLabel = document.getElementById('timeLabel');
+const nextBtn = document.getElementById('nextBtn');
+const beatFlash = document.getElementById('beatFlash');
+const spectrumWrap = document.getElementById('spectrumWrap');
+const spectrumCanvas = document.getElementById('spectrumCanvas');
+const spectrumCtx = spectrumCanvas.getContext('2d');
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+let layers = [];
+let isPlaying = false;
+let isPaused = false;
+let currentTrack = 0;
+let flickerTimer = null;
+let animationFrame = null;
+let lastFrameTime = 0;
+let activePaletteIndex = -1;
+
+let audioCtx = null;
+let analyser = null;
+let audioSource = null;
+let highShelf = null;
+let freqData = null;
+let bassEnergy = 0, midEnergy = 0, highEnergy = 0;
+let analyserAvailable = false;
+let fakeEnergyPhase = 0;
+
+// Бит-детектор
+let prevBassEnergy = 0;
+let prevHighEnergy = 0;
+let lastBeatTime = 0;
+let lastHighBeatTime = 0;
+let beatPulse = 0;
+let highPulse = 0;
+
+// === ТЕМП ===
+// Мгновенный BPM по интервалам между битами
+let bpmInstant = 0;
+// Сглаженный BPM (для стабильной смены визуала)
+let bpmSmooth = 0;
+// Нормализованный темп 0..1 (0 = медленно, 1 = быстро)
+let tempoNorm = 0;
+// Сколько подряд битов пришло — для уверенности в темпе
+let beatStreak = 0;
+let beatIntervals = [];
+// Плотность событий за последнюю секунду (биты + хай-хэты)
+let eventTimes = [];
+// "Плотностной" темп — сколько событий/сек
+let eventDensity = 0;
+// Флаг — темп определён (есть хотя бы 3 бита)
+let tempoLocked = false;
+
+let imageCache = new Map();
+let spectrumValues = new Float32Array(CONFIG.SPECTRUM_BARS);
+
+// Кэш следующего интервала смены (пересчитывается при изменении темпа)
+let nextFlickerDelay = 500;
+
+/* ============================================================
+   WEBAUDIO ANALYSER + TREBLE BOOST
+   ============================================================ */
+function initAnalyser() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    highShelf = audioCtx.createBiquadFilter();
+    highShelf.type = 'highshelf';
+    highShelf.frequency.value = CONFIG.TREBLE_FREQ_HZ;
+    highShelf.gain.value = CONFIG.TREBLE_BOOST_DB;
+
+    const airFilter = audioCtx.createBiquadFilter();
+    airFilter.type = 'peaking';
+    airFilter.frequency.value = 10000;
+    airFilter.Q.value = 1;
+    airFilter.gain.value = 6;
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.7;
+    analyser.minDecibels = -90;
+    analyser.maxDecibels = -10;
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+
+    audioSource = audioCtx.createMediaElementSource(audio);
+
+    audioSource.connect(highShelf);
+    highShelf.connect(airFilter);
+    airFilter.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    analyserAvailable = true;
+    console.log(`✅ Analyser готов. Treble +${CONFIG.TREBLE_BOOST_DB}dB`);
+  } catch (e) {
+    console.warn('⚠ Analyser недоступен (CORS/Referer):', e);
+    analyserAvailable = false;
+    audioCtx = null;
+    analyser = null;
+    freqData = null;
+    audioSource = null;
+    highShelf = null;
+    audioWarnEl.textContent = '⚠ аудио-анализ недоступен (CORS) — визуал в авто-режиме';
+    audioWarnEl.classList.add('visible');
+    setTimeout(() => audioWarnEl.classList.remove('visible'), 6000);
+    // В авто-режиме темп берём из псевдо-энергии
+    tempoLocked = true;
+  }
+}
+
+/* ============================================================
+   ОБНОВЛЕНИЕ ЭНЕРГИЙ + ТЕМП
+   ============================================================ */
+function updateAudioEnergy(now) {
+  if (analyserAvailable && analyser && freqData) {
+    analyser.getByteFrequencyData(freqData);
+
+    const binCount = freqData.length;
+    const nyquist = audioCtx.sampleRate / 2;
+    const binHz = nyquist / binCount;
+
+    const bassEnd = Math.min(binCount - 1, Math.floor(250 / binHz));
+    const midEnd  = Math.min(binCount - 1, Math.floor(4000 / binHz));
+    const highEnd = Math.min(binCount - 1, Math.floor(16000 / binHz));
+
+    let b = 0, m = 0, h = 0;
+    for (let i = 1; i < bassEnd; i++) b += freqData[i];
+    for (let i = bassEnd; i < midEnd; i++) m += freqData[i];
+    for (let i = midEnd; i < highEnd; i++) h += freqData[i];
+
+    bassEnergy = b / Math.max(1, bassEnd - 1) / 255;
+    midEnergy  = m / Math.max(1, midEnd - bassEnd) / 255;
+    highEnergy = h / Math.max(1, highEnd - midEnd) / 255;
+
+    // ===== БИТ-ДЕТЕКТОР =====
+    const bassDelta = bassEnergy - prevBassEnergy;
+    const timeSinceLastBeat = now - lastBeatTime;
+
+    if (bassDelta > 0.08 && bassEnergy > 0.32 && timeSinceLastBeat > 180) {
+      lastBeatTime = now;
+      beatPulse = 1.0;
+      beatStreak++;
+      eventTimes.push(now);
+
+      // Интервал между битами
+      if (beatIntervals.length > 0) {
+        const interval = now - beatIntervals[beatIntervals.length - 1];
+        // Валидный интервал: 200 мс (300 BPM) .. 1500 мс (40 BPM)
+        if (interval > 200 && interval < 1500) {
+          beatIntervals.push(now);
+          if (beatIntervals.length > 10) beatIntervals.shift();
+
+          // Мгновенный BPM по последнему интервалу
+          const instantBpm = 60000 / interval;
+
+          // Сглаживание: чем больше битов, тем стабильнее
+          if (bpmSmooth === 0) {
+            bpmSmooth = instantBpm;
+          } else {
+            // Адаптивное сглаживание
+            const alpha = tempoLocked ? 0.15 : 0.4;
+            bpmSmooth = bpmSmooth * (1 - alpha) + instantBpm * alpha;
+          }
+          bpmInstant = instantBpm;
+
+          if (beatIntervals.length >= 4) {
+            tempoLocked = true;
+          }
+        }
+      } else {
+        beatIntervals.push(now);
+      }
+
+      // Вспышка
+      if (!CONFIG.REDUCED_MOTION) {
+        beatFlash.style.opacity = Math.min(0.35, bassDelta * 2.5);
+        setTimeout(() => { beatFlash.style.opacity = '0'; }, 80);
+      }
+    }
+
+    // ===== ХАЙ-ХЭТ ДЕТЕКТОР =====
+    const highDelta = highEnergy - prevHighEnergy;
+    const timeSinceHighBeat = now - lastHighBeatTime;
+    if (highDelta > 0.06 && highEnergy > 0.25 && timeSinceHighBeat > 120) {
+      lastHighBeatTime = now;
+      highPulse = 1.0;
+      eventTimes.push(now);
+    }
+
+    prevBassEnergy = bassEnergy;
+    prevHighEnergy = highEnergy;
+
+    beatPulse *= 0.88;
+    highPulse *= 0.82;
+
+    // ===== СПЕКТР =====
+    const bars = CONFIG.SPECTRUM_BARS;
+    const minFreq = 30, maxFreq = 18000;
+    const logMin = Math.log10(minFreq);
+    const logMax = Math.log10(maxFreq);
+
+    for (let i = 0; i < bars; i++) {
+      const t0 = i / bars;
+      const t1 = (i + 1) / bars;
+      const f0 = Math.pow(10, logMin + (logMax - logMin) * t0);
+      const f1 = Math.pow(10, logMin + (logMax - logMin) * t1);
+
+      const bin0 = Math.max(1, Math.floor(f0 / binHz));
+      const bin1 = Math.min(binCount - 1, Math.ceil(f1 / binHz));
+
+      let sum = 0, count = 0;
+      for (let j = bin0; j <= bin1; j++) {
+        sum += freqData[j];
+        count++;
+      }
+      let v = count > 0 ? sum / count / 255 : 0;
+
+      if (i > bars * 0.6) {
+        v *= 1.6;
+      } else if (i > bars * 0.4) {
+        v *= 1.25;
+      }
+
+      const prev = spectrumValues[i];
+      spectrumValues[i] = v > prev
+        ? prev + (v - prev) * 0.65
+        : prev + (v - prev) * 0.15;
+    }
+  } else {
+    // Авто-режим
+    fakeEnergyPhase += 0.016;
+    const t = now * 0.001;
+    bassEnergy = 0.35 + 0.3 * Math.sin(t * 1.5) * Math.sin(t * 0.7);
+    midEnergy  = 0.4 + 0.3 * Math.sin(t * 2.1 + 1.3);
+    highEnergy = 0.5 + 0.4 * Math.abs(Math.sin(t * 3.7 + 2.1));
+    bassEnergy = Math.max(0.05, Math.min(0.95, bassEnergy));
+    midEnergy  = Math.max(0.05, Math.min(0.95, midEnergy));
+    highEnergy = Math.max(0.05, Math.min(0.95, highEnergy));
+
+    beatPulse *= 0.9;
+    highPulse *= 0.85;
+
+    // Псевдо-темп: медленно гуляет
+    const fakeBpm = 90 + 50 * Math.sin(t * 0.15);
+    bpmSmooth = fakeBpm;
+    bpmInstant = fakeBpm;
+    tempoLocked = true;
+
+    const bars = CONFIG.SPECTRUM_BARS;
+    for (let i = 0; i < bars; i++) {
+      const t0 = i / bars;
+      const v = 0.3 + 0.5 * Math.abs(Math.sin(t * 2 + t0 * 12))
+              + 0.2 * Math.abs(Math.sin(t * 4 + t0 * 25));
+      spectrumValues[i] = Math.min(1, v);
+    }
+  }
+
+  // ===== ПЛОТНОСТЬ СОБЫТИЙ (сколько битов+хэтов в секунду) =====
+  const cutoff = now - 1000;
+  while (eventTimes.length && eventTimes[0] < cutoff) {
+    eventTimes.shift();
+  }
+  // Сглаживание плотности
+  const instantDensity = eventTimes.length; // events per second
+  eventDensity = eventDensity * 0.9 + instantDensity * 0.1;
+
+  // ===== ИТОГОВЫЙ ТЕМП 0..1 =====
+  // Комбинируем BPM и плотность событий
+  let bpmNorm = 0;
+  if (bpmSmooth > 0) {
+    bpmNorm = (bpmSmooth - CONFIG.BPM_MIN) / (CONFIG.BPM_MAX - CONFIG.BPM_MIN);
+    bpmNorm = Math.max(0, Math.min(1, bpmNorm));
+  }
+  // Плотность: 0..8 событий/сек → 0..1
+  let densityNorm = Math.max(0, Math.min(1, eventDensity / 8));
+
+  // Если BPM ещё не определён — используем только плотность
+  const rawTempo = tempoLocked
+    ? (bpmNorm * 0.7 + densityNorm * 0.3)
+    : densityNorm;
+
+  // Плавное сглаживание итогового темпа, чтобы не дёргался
+  tempoNorm = tempoNorm * 0.92 + rawTempo * 0.08;
+  tempoNorm = Math.max(0, Math.min(1, tempoNorm));
+
+  // ===== ПЕРЕСЧЁТ ЗАДЕРЖКИ СМЕНЫ =====
+  // Интерполируем между FLICKER_SLOW и FLICKER_FAST по tempoNorm
+  const slowAvg = (CONFIG.FLICKER_SLOW[0] + CONFIG.FLICKER_SLOW[1]) / 2;
+  const fastAvg = (CONFIG.FLICKER_FAST[0] + CONFIG.FLICKER_FAST[1]) / 2;
+  const baseAvg = slowAvg + (fastAvg - slowAvg) * tempoNorm;
+  nextFlickerDelay = baseAvg;
+}
+
+/* ============================================================
+   SPECTRUM
+   ============================================================ */
+function resizeSpectrum() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = spectrumCanvas.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width * dpr));
+  const h = Math.max(1, Math.floor(rect.height * dpr));
+  if (spectrumCanvas.width !== w || spectrumCanvas.height !== h) {
+    spectrumCanvas.width = w;
+    spectrumCanvas.height = h;
+  }
+}
+
+function drawSpectrum() {
+  resizeSpectrum();
+  const W = spectrumCanvas.width;
+  const H = spectrumCanvas.height;
+
+  spectrumCtx.clearRect(0, 0, W, H);
+
+  const bars = CONFIG.SPECTRUM_BARS;
+  const barWidth = W / bars;
+  const gap = Math.max(1, barWidth * 0.15);
+
+  for (let i = 0; i < bars; i++) {
+    const v = spectrumValues[i];
+    const boost = 1 + (i / bars) * 0.5;
+    const barH = Math.min(H, v * H * 0.95 * boost + beatPulse * H * 0.08);
+
+    const x = i * barWidth;
+    const y = H - barH;
+
+    const hue = 260 - (i / bars) * 260 + (highPulse * 30);
+    const sat = 100;
+    const light = 45 + v * 35 + highPulse * 15;
+
+    const grad = spectrumCtx.createLinearGradient(0, H, 0, y);
+    grad.addColorStop(0, `hsla(${hue}, ${sat}%, ${light * 0.4}%, 0.15)`);
+    grad.addColorStop(0.4, `hsla(${hue}, ${sat}%, ${light}%, 0.7)`);
+    grad.addColorStop(1, `hsla(${hue}, ${sat}%, ${Math.min(95, light + 15)}%, 1)`);
+
+    spectrumCtx.fillStyle = grad;
+    spectrumCtx.fillRect(x + gap / 2, y, barWidth - gap, barH);
+
+    spectrumCtx.fillStyle = `hsla(${hue}, 100%, 85%, ${0.6 + v * 0.4})`;
+    spectrumCtx.fillRect(x + gap / 2, y - 2, barWidth - gap, 2);
+  }
+
+  spectrumCtx.globalCompositeOperation = 'screen';
+  spectrumCtx.globalAlpha = 0.25;
+  for (let i = 0; i < bars; i++) {
+    const v = spectrumValues[i];
+    const barH = Math.min(H * 0.6, v * H * 0.45);
+    const x = i * barWidth;
+    const hue = 260 - (i / bars) * 260;
+    spectrumCtx.fillStyle = `hsla(${hue}, 100%, 60%, 0.3)`;
+    spectrumCtx.fillRect(x + gap / 2, 0, barWidth - gap, barH);
+  }
+  spectrumCtx.globalAlpha = 1;
+  spectrumCtx.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   ИНТЕРНЕТ-КАРТИНКИ
+   ============================================================ */
+function loadImage(url) {
+  return new Promise((resolve) => {
+    if (imageCache.has(url)) {
+      resolve(imageCache.get(url));
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      imageCache.set(url, img);
+      resolve(img);
+    };
+    img.onerror = () => {
+      console.warn('Не загрузилась картинка:', url);
+      resolve(null);
+    };
+    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+  });
+}
+
+async function preloadImages() {
+  const toLoad = CONFIG.IMAGE_URLS.slice(0, 8);
+  for (const url of toLoad) {
+    await loadImage(url);
+  }
+  console.log(`📸 Загружено ${imageCache.size} картинок`);
+}
+
+/* ============================================================
+   СОЗДАНИЕ СЛОЁВ
+   ============================================================ */
+function makeRandomState() {
+  const pal = CONFIG.PALETTES[activePaletteIndex >= 0
+    ? activePaletteIndex
+    : Math.floor(Math.random() * CONFIG.PALETTES.length)];
+  return {
+    hueShift: Math.random() * 360,
+    seed: Math.random() * 1000,
+    mode: Math.floor(Math.random() * 9),
+    palette: pal,
+    voroPoints: makeVoronoiPoints(15 + Math.floor(Math.random() * 20)),
+    imgUrl: CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)],
+    imgBlend: Math.floor(Math.random() * 3),
+  };
+}
+
+function makeVoronoiPoints(n) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    pts.push({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0004,
+      vy: (Math.random() - 0.5) * 0.0004,
+    });
+  }
+  return pts;
+}
+
+function createLayer(index) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'video-layer';
+  canvas.width = 960;
+  canvas.height = 540;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  stage.appendChild(canvas);
+
+  return {
+    type: 'canvas',
+    canvas,
+    ctx,
+    state: makeRandomState(),
+    draw: drawScene.bind(null, ctx, canvas),
+  };
+}
+
+/* ============================================================
+   ГЕНЕРАТИВНЫЕ РЕЖИМЫ
+   ============================================================ */
+function drawScene(ctx, canvas, state, now) {
+  const W = canvas.width, H = canvas.height;
+  const time = now * 0.001;
+  const pal = state.palette;
+  const bass = bassEnergy;
+  const beat = beatPulse;
+
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+
+  switch (state.mode) {
+    case 0: drawNoise(ctx, W, H, state, time, pal); break;
+    case 1: drawStripes(ctx, W, H, state, time, pal); break;
+    case 2: drawRings(ctx, W, H, state, time, pal, beat); break;
+    case 3: drawBlocks(ctx, W, H, state, time, pal); break;
+    case 4: drawTunnel(ctx, W, H, state, time, pal, bass, beat); break;
+    case 5: drawVHS(ctx, W, H, state, time, pal); break;
+    case 6: drawPlasma(ctx, W, H, state, time, pal); break;
+    case 7: drawVoronoi(ctx, W, H, state, time, pal); break;
+    case 8: drawImage(ctx, W, H, state, time, pal); break;
+  }
+
+  if (Math.random() < 0.15 + highEnergy * 0.5) {
+    ctx.globalCompositeOperation = 'screen';
+    const n = 1 + Math.floor(highEnergy * 4);
+    for (let i = 0; i < n; i++) {
+      const gx = Math.random() * W;
+      const gy = Math.random() * H;
+      ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 50%, ${0.15 + highEnergy * 0.4})`;
+      ctx.fillRect(gx, gy, Math.random() * 200 + 50, Math.random() * 8 + 2);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  ctx.restore();
+}
+
+function drawImage(ctx, W, H, state, time, pal) {
+  const img = imageCache.get(state.imgUrl);
+  if (!img) {
+    ctx.fillStyle = pal[0];
+    ctx.fillRect(0, 0, W, H);
+    return;
+  }
+
+  const zoom = 1.05 + beatPulse * 0.15 + bassEnergy * 0.2 + highPulse * 0.08 + tempoNorm * 0.05;
+  const rot = (time * (0.05 + tempoNorm * 0.15) + state.seed) % (Math.PI * 2);
+  const shakeAmt = (beatPulse + highPulse) * (10 + tempoNorm * 15);
+  const shakeX = (Math.random() - 0.5) * shakeAmt;
+  const shakeY = (Math.random() - 0.5) * shakeAmt;
+
+  ctx.save();
+  ctx.translate(W / 2 + shakeX, H / 2 + shakeY);
+  ctx.rotate(Math.sin(rot) * (0.03 + tempoNorm * 0.05));
+  ctx.scale(zoom, zoom);
+
+  const hue = (state.hueShift + time * 30 + bassEnergy * 90 + tempoNorm * 120) % 360;
+
+  ctx.globalAlpha = 0.85;
+  ctx.drawImage(img, -W / 2, -H / 2, W, H);
+
+  ctx.globalCompositeOperation = state.imgBlend === 0 ? 'overlay'
+    : state.imgBlend === 1 ? 'screen' : 'multiply';
+  ctx.globalAlpha = 0.3 + beatPulse * 0.3 + tempoNorm * 0.15;
+  ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.6)`;
+  ctx.fillRect(-W / 2, -H / 2, W, H);
+
+  if (beatPulse > 0.3 || highPulse > 0.3) {
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = Math.max(beatPulse, highPulse) * 0.4;
+    const split = 8 * beatPulse * (1 + tempoNorm);
+    ctx.drawImage(img, -W / 2 + split, -H / 2, W, H);
+    ctx.fillStyle = '#00ffff';
+    ctx.globalAlpha = highPulse * 0.3;
+    ctx.fillRect(-W / 2, -H / 2, W, H);
+  }
+
+  ctx.restore();
+}
+
+function drawNoise(ctx, W, H, state, time, pal) {
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  const hueBase = state.hueShift + time * 60 + bassEnergy * 180;
+  const highBoost = 1 + highEnergy * 0.8;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.random() * 255 * highBoost;
+    d[i]     = (v + hueBase) % 255;
+    d[i + 1] = (v * 0.5 + 128 + midEnergy * 100) % 255;
+    d[i + 2] = (255 - v * 0.7) % 255;
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function drawStripes(ctx, W, H, state, time, pal) {
+  ctx.fillStyle = pal[0];
+  ctx.fillRect(0, 0, W, H);
+  const speedMul = 1 + tempoNorm * 2;
+  const stripeW = 40 + 30 * Math.sin(time * 2 * speedMul + state.seed) + bassEnergy * 60;
+  const offset = (time * 200 * speedMul * (1 + bassEnergy) + state.seed * 100) % (stripeW * 2);
+  ctx.save();
+  ctx.translate(offset, 0);
+  for (let x = -stripeW * 2; x < W + stripeW * 2; x += stripeW * 2) {
+    ctx.fillStyle = pal[1];
+    ctx.fillRect(x, 0, stripeW, H);
+    ctx.fillStyle = pal[2];
+    ctx.fillRect(x + stripeW, 0, stripeW, H);
+  }
+  ctx.restore();
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, `rgba(0,0,0,${0.5 - bassEnergy * 0.3})`);
+  g.addColorStop(1, `rgba(255,255,255,${0.2 + midEnergy * 0.3 + highPulse * 0.2})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawRings(ctx, W, H, state, time, pal, beat) {
+  ctx.fillStyle = pal[0];
+  ctx.fillRect(0, 0, W, H);
+  const speedMul = 1 + tempoNorm * 1.5;
+  const cx = W / 2 + Math.sin(time * 3 * speedMul + state.seed) * W * 0.3;
+  const cy = H / 2 + Math.cos(time * 2.5 * speedMul + state.seed) * H * 0.3;
+  const maxR = Math.hypot(W, H);
+  const n = 12 + Math.floor(bassEnergy * 20);
+  for (let i = 0; i < n; i++) {
+    const r = ((time * 80 * speedMul * (1 + bassEnergy * 2 + beat * 0.5) + i * 60 + state.seed * 50) % maxR);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = pal[i % pal.length];
+    ctx.lineWidth = 15 + Math.sin(time + i) * 10 + bassEnergy * 20 + beat * 15;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBlocks(ctx, W, H, state, time, pal) {
+  ctx.fillStyle = pal[0];
+  ctx.fillRect(0, 0, W, H);
+  const cellW = 80, cellH = 60;
+  const cols = Math.ceil(W / cellW), rows = Math.ceil(H / cellH);
+  const speedMul = 1 + tempoNorm * 2;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const n = Math.sin(x * 0.7 + time * 3 * speedMul + state.seed) *
+                Math.cos(y * 0.5 + time * 2 * speedMul);
+      if (n > 0.2 - bassEnergy * 0.4 - beatPulse * 0.3) {
+        ctx.fillStyle = pal[(x + y) % pal.length];
+        const shiftAmt = 20 + bassEnergy * 60;
+        const shiftX = Math.sin(time * 5 * speedMul + y) * shiftAmt;
+        const shiftY = Math.cos(time * 4 * speedMul + x) * shiftAmt;
+        ctx.fillRect(x * cellW + shiftX, y * cellH + shiftY, cellW - 4, cellH - 4);
+      }
+    }
+  }
+}
+
+function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
+  const cx = W / 2, cy = H / 2;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const rings = 35;
+  const speed = (1 + bassEnergy * 3 + beat * 2 + highPulse * 0.5) * (1 + tempoNorm * 2.5);
+  const hueBase = state.hueShift + time * 40 + highEnergy * 80;
+
+  for (let i = rings; i > 0; i--) {
+    const t = (i + time * speed * 0.8) % rings;
+    const progress = t / rings;
+    const r = progress * Math.hypot(W, H) * 0.75;
+    const thickness = (4 + (1 - progress) * 18) * (1 + beat * 0.4);
+    const hue = (hueBase + i * 18 + time * 60) % 360;
+    const lightness = 45 + bass * 35 + beat * 15 + highEnergy * 20;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${hue}, 100%, ${Math.min(85, lightness)}%, ${0.85 - progress * 0.7})`;
+    ctx.lineWidth = thickness;
+    ctx.stroke();
+
+    if (beat > 0.4 && i % 3 === 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${hue}, 100%, 80%, ${(0.6 - progress * 0.5) * beat})`;
+      ctx.lineWidth = thickness * 3;
+      ctx.stroke();
+    }
+  }
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  const rays = 16;
+  const raySpeed = time * (0.5 + beat * 1.5) * (1 + tempoNorm);
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2 + raySpeed;
+    const len = Math.hypot(W, H);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+    ctx.strokeStyle = `hsla(${(i * 25 + state.hueShift) % 360}, 100%, 60%, ${0.08 + midEnergy * 0.2 + beat * 0.15 + highPulse * 0.1})`;
+    ctx.lineWidth = 2 + midEnergy * 8 + beat * 6 + highPulse * 3;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  if (beat > 0.1 || highPulse > 0.2) {
+    const glow = Math.max(beat, highPulse);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 150 * glow);
+    grad.addColorStop(0, `hsla(${(hueBase + 180) % 360}, 100%, 70%, ${glow * 0.6})`);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function drawVHS(ctx, W, H, state, time, pal) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, pal[0]);
+  g.addColorStop(1, pal[2]);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  const strips = 20 + Math.floor(bassEnergy * 40);
+  const speedMul = 1 + tempoNorm;
+  for (let i = 0; i < strips; i++) {
+    const y = Math.random() * H;
+    const h = 1 + Math.random() * 8;
+    const shift = (Math.random() - 0.5) * 80 * speedMul * (1 + bassEnergy * 2);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = `hsla(${Math.random() * 60 + 180}, 100%, 60%, ${0.3 + Math.random() * 0.4})`;
+    ctx.fillRect(shift, y, W, h);
+    ctx.fillStyle = `hsla(${Math.random() * 60 + 300}, 100%, 60%, ${0.3 + Math.random() * 0.4})`;
+    ctx.fillRect(-shift, y, W, h);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  const dots = 200 + Math.floor(highEnergy * 1200);
+  for (let i = 0; i < dots; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+    ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 3);
+  }
+
+  if (Math.random() < 0.3 + highEnergy * 0.6) {
+    const y = Math.random() * H;
+    const tearH = 5 + Math.random() * 40;
+    const offset = (Math.random() - 0.5) * 200 * speedMul;
+    try {
+      const img = ctx.getImageData(0, y, W, tearH);
+      ctx.putImageData(img, offset, y);
+    } catch (e) { /* ignore */ }
+  }
+
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  for (let y = 0; y < H; y += 4) {
+    ctx.fillRect(0, y, W, 1);
+  }
+}
+
+function drawPlasma(ctx, W, H, state, time, pal) {
+  const pw = 80, ph = 45;
+  const small = document.createElement('canvas');
+  small.width = pw; small.height = ph;
+  const sctx = small.getContext('2d');
+  const img = sctx.createImageData(pw, ph);
+  const d = img.data;
+
+  const speedMul = 1 + tempoNorm * 1.5;
+  const t = time * speedMul * (1 + bassEnergy * 2 + highEnergy);
+  const amp = 1 + midEnergy * 2 + highEnergy * 1.5;
+
+  for (let y = 0; y < ph; y++) {
+    for (let x = 0; x < pw; x++) {
+      const v = Math.sin(x * 0.15 + t) +
+                Math.sin(y * 0.2 + t * 0.8) +
+                Math.sin((x + y) * 0.1 + t * 1.2) +
+                Math.sin(Math.hypot(x - pw / 2, y - ph / 2) * 0.15 - t * 1.5) * amp;
+      const idx = (y * pw + x) * 4;
+      const hue = ((v + 4) / 8) * 360;
+      const [r, g, b] = hslToRgb(hue / 360, 0.9, 0.5);
+      d[idx] = r; d[idx + 1] = g; d[idx + 2] = b; d[idx + 3] = 255;
+    }
+  }
+  sctx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(small, 0, 0, W, H);
+}
+
+function drawVoronoi(ctx, W, H, state, time, pal) {
+  ctx.fillStyle = pal[0];
+  ctx.fillRect(0, 0, W, H);
+
+  const pts = state.voroPoints;
+  const speedMul = (1 + bassEnergy * 3 + highEnergy) * (1 + tempoNorm * 2);
+
+  pts.forEach(p => {
+    p.x += p.vx * speedMul;
+    p.y += p.vy * speedMul;
+    if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0;
+    if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0;
+  });
+
+  const scale = 6;
+  const pw = Math.floor(W / scale), ph = Math.floor(H / scale);
+  const small = document.createElement('canvas');
+  small.width = pw; small.height = ph;
+  const sctx = small.getContext('2d');
+  const img = sctx.createImageData(pw, ph);
+  const d = img.data;
+
+  const paletteRgb = pal.map(hex => hexToRgb(hex));
+
+  for (let y = 0; y < ph; y++) {
+    for (let x = 0; x < pw; x++) {
+      const nx = x / pw, ny = y / ph;
+      let minDist = Infinity, nearest = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const dx = pts[i].x - nx, dy = pts[i].y - ny;
+        const dist = dx * dx + dy * dy;
+        if (dist < minDist) { minDist = dist; nearest = i; }
+      }
+      const col = paletteRgb[nearest % paletteRgb.length];
+      const idx = (y * pw + x) * 4;
+      const edge = minDist < 0.0008 ? 0.3 : 1;
+      d[idx] = col[0] * edge;
+      d[idx + 1] = col[1] * edge;
+      d[idx + 2] = col[2] * edge;
+      d[idx + 3] = 255;
+    }
+  }
+  sctx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(small, 0, 0, W, H);
+}
+
+/* ============================================================
+   ЦВЕТОВЫЕ УТИЛИТЫ
+   ============================================================ */
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return [
+    parseInt(h.substring(0, 2), 16),
+    parseInt(h.substring(2, 4), 16),
+    parseInt(h.substring(4, 6), 16),
+  ];
+}
+
+/* ============================================================
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — трансформации зависят от темпа
+   ============================================================ */
+function switchRandomLayer() {
+  const idx = Math.floor(Math.random() * layers.length);
+  const reduce = CONFIG.REDUCED_MOTION;
+  const tempo = tempoNorm;
+
+  layers.forEach((layer, i) => {
+    const el = layer.canvas;
+    const isActive = i === idx;
+
+    if (isActive) {
+      layer.state = makeRandomState();
+      layer.state.palette = CONFIG.PALETTES[activePaletteIndex >= 0
+        ? activePaletteIndex
+        : Math.floor(Math.random() * CONFIG.PALETTES.length)];
+
+      if (layer.state.mode === 8) {
+        layer.state.imgUrl = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
+        loadImage(layer.state.imgUrl);
+        el.classList.remove('pixelated');
+      } else if (layer.state.mode === 7 && Math.random() < 0.5) {
+        el.classList.add('pixelated');
+      } else {
+        el.classList.remove('pixelated');
+      }
+
+      if (reduce) {
+        el.style.transform = 'none';
+        el.style.filter = 'none';
+      } else {
+        // Чем быстрее темп — тем сильнее трансформации
+        const intensity = 0.3 + tempo * 1.4;
+
+        const scaleAmp = 0.15 + tempo * 0.6;
+        const rotateAmp = 2 + tempo * 14;
+        const skewAmp = 1 + tempo * 10;
+        const transAmp = 3 + tempo * 20;
+        const blurChance = 0.05 + tempo * 0.25;
+
+        const scale = 1 - scaleAmp / 2 + Math.random() * scaleAmp;
+        const rotate = (Math.random() - 0.5) * rotateAmp;
+        const skewX = (Math.random() - 0.5) * skewAmp;
+        const skewY = (Math.random() - 0.5) * skewAmp;
+        const tx = (Math.random() - 0.5) * transAmp;
+        const ty = (Math.random() - 0.5) * transAmp;
+        const hue = Math.random() * 360;
+        const sat = 0.7 + Math.random() * 0.8 + tempo * 0.5;
+        const con = 0.9 + Math.random() * 0.6 + tempo * 0.4;
+        const blur = Math.random() < blurChance
+          ? `blur(${(1 + tempo * 5).toFixed(1)}px)`
+          : '';
+
+        el.style.transform =
+          `scale(${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
+        el.style.filter =
+          `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) ${blur}`;
+      }
+      el.style.opacity = '1';
+      el.style.zIndex = '10';
+    } else {
+      el.style.opacity = '0';
+      el.style.zIndex = '1';
+    }
+  });
+}
+
+/* ============================================================
+   АНИМАЦИЯ
+   ============================================================ */
+function animate(now) {
+  const dt = now - lastFrameTime;
+  const minInterval = 1000 / CONFIG.MAX_FPS;
+
+  if (dt >= minInterval) {
+    lastFrameTime = now;
+    updateAudioEnergy(now);
+    drawSpectrum();
+
+    layers.forEach((layer) => {
+      if (layer.canvas.style.opacity === '1') {
+        layer.draw(layer.state, now);
+        if (!CONFIG.REDUCED_MOTION && Math.random() < 0.04) {
+          const el = layer.canvas;
+          const pulseScale = 1 + beatPulse * 0.12 + bassEnergy * 0.08;
+          el.style.transform = el.style.transform.replace(
+            /scale\([\d.]+\)/,
+            `scale(${pulseScale})`
+          );
+        }
+      }
+    });
+  }
+
+  animationFrame = requestAnimationFrame(animate);
+}
+
+function startChaos() {
+  stopChaos();
+  scheduleFlicker();
+  lastFrameTime = 0;
+  animationFrame = requestAnimationFrame(animate);
+}
+
+/* ============================================================
+   ГЛАВНОЕ: смена слоя по темпу
+   Интервал = базовый (из tempoNorm) + джиттер,
+   плюс мгновенная реакция на биты при быстром темпе.
+   ============================================================ */
+function scheduleFlicker() {
+  if (CONFIG.REDUCED_MOTION) {
+    flickerTimer = setTimeout(() => {
+      switchRandomLayer();
+      scheduleFlicker();
+    }, 800);
+    return;
+  }
+
+  // Разброс: чем быстрее темп, тем шире джиттер
+  const jitter = 0.3 + tempoNorm * 0.7;
+  const delay = nextFlickerDelay * (0.7 + Math.random() * jitter * 0.6);
+
+  flickerTimer = setTimeout(() => {
+    // Вероятность смены зависит от темпа:
+    // медленно — иногда просто перерисовываем тот же слой
+    // быстро — почти всегда новый слой
+    const switchChance = 0.4 + tempoNorm * 0.55;
+
+    if (Math.random() < switchChance) {
+      switchRandomLayer();
+    } else {
+      const active = layers.find(l => l.canvas.style.opacity === '1');
+      if (active) {
+        active.state = makeRandomState();
+        if (active.state.mode === 8) {
+          active.state.imgUrl = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
+          loadImage(active.state.imgUrl);
+        }
+      }
+    }
+    scheduleFlicker();
+  }, delay);
+}
+
+function stopChaos() {
+  if (flickerTimer) { clearTimeout(flickerTimer); flickerTimer = null; }
+  if (animationFrame) { cancelAnimationFrame(animationFrame); animationFrame = null; }
+}
+
+/* ============================================================
+   АУДИО
+   ============================================================ */
+function loadTrack(index) {
+  currentTrack = ((index % CONFIG.PLAYLIST.length) + CONFIG.PLAYLIST.length) % CONFIG.PLAYLIST.length;
+  audio.src = CONFIG.PLAYLIST[currentTrack].src;
+  audio.load();
+  console.log('🎵 Загрузка трека:', CONFIG.PLAYLIST[currentTrack].title);
+  // Сброс темпа при смене трека
+  resetTempo();
+}
+
+function resetTempo() {
+  bpmSmooth = 0;
+  bpmInstant = 0;
+  tempoNorm = 0;
+  beatIntervals = [];
+  eventTimes = [];
+  eventDensity = 0;
+  tempoLocked = false;
+  beatStreak = 0;
+}
+
+function nextTrack() {
+  loadTrack(currentTrack + 1);
+  if (isPlaying && !isPaused) {
+    audio.play().catch(err => {
+      console.warn('Не удалось воспроизвести следующий трек:', err);
+      setTimeout(() => audio.play().catch(() => {}), 1000);
+    });
+  }
+}
+
+audio.addEventListener('error', (e) => {
+  const err = audio.error;
+  if (!err) return;
+  console.warn('❌ Ошибка аудио:', err.code, err.message);
+  if (err.code === 4) {
+    console.warn('💡 Вероятно VK CDN блокирует: Referer/CORS. Скачай трек локально.');
+    audioWarnEl.textContent = '⚠ трек недоступен — проверь консоль';
+    audioWarnEl.classList.add('visible');
+    setTimeout(() => audioWarnEl.classList.remove('visible'), 6000);
+  }
+});
+
+/* ============================================================
+   PLAY / PAUSE
+   ============================================================ */
+function startPlayback() {
+  if (isPlaying) return;
+  isPlaying = true;
+  isPaused = false;
+
+  initAnalyser();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+  playBtn.classList.add('hidden');
+  statusEl.classList.add('visible');
+  spectrumWrap.classList.add('visible');
+  hintEl.classList.add('visible');
+  setTimeout(() => hintEl.classList.remove('visible'), 4000);
+
+  if (!audio.src) loadTrack(0);
+
+  const playPromise = audio.play();
+  if (playPromise) {
+    playPromise
+      .then(() => console.log('▶ Воспроизведение началось'))
+      .catch(err => {
+        console.warn('⚠ play() failed:', err);
+        if (currentTrack !== 1 && CONFIG.PLAYLIST.length > 1) {
+          console.log('🔄 Пробуем fallback-трек...');
+          loadTrack(1);
+          audio.play().catch(() => {});
+        }
+      });
+  }
+
+  switchRandomLayer();
+  startChaos();
+
+  layers.forEach(l => l.draw(l.state, performance.now()));
+}
+
+function togglePause() {
+  if (!isPlaying) return;
+  isPaused = !isPaused;
+  if (isPaused) {
+    audio.pause();
+    pauseOverlay.classList.add('visible');
+    progressWrap.classList.add('visible');
+  } else {
+    audio.play().catch(() => {});
+    pauseOverlay.classList.remove('visible');
+    setTimeout(() => progressWrap.classList.remove('visible'), 2500);
+  }
+}
+
+playBtn.addEventListener('click', startPlayback);
+pauseOverlay.addEventListener('click', togglePause);
+nextBtn.addEventListener('click', (e) => { e.stopPropagation(); nextTrack(); });
+
+/* ============================================================
+   ЖЕСТЫ
+   ============================================================ */
+let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+let lastTapTime = 0;
+let tapTimer = null;
+
+stage.addEventListener('click', (e) => {
+  if (!isPlaying) return;
+
+  const now = Date.now();
+  if (now - lastTapTime < 300) {
+    if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+    lastTapTime = 0;
+    togglePause();
+    return;
+  }
+  lastTapTime = now;
+
+  tapTimer = setTimeout(() => {
+    switchRandomLayer();
+    tapTimer = null;
+  }, 300);
+});
+
+stage.addEventListener('touchstart', (e) => {
+  if (!e.touches[0]) return;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  touchStartTime = Date.now();
+}, { passive: true });
+
+stage.addEventListener('touchend', (e) => {
+  if (!e.changedTouches[0] || !isPlaying) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  const dt = Date.now() - touchStartTime;
+
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 600) {
+    activePaletteIndex = (activePaletteIndex + 1) % CONFIG.PALETTES.length;
+    const active = layers.find(l => l.canvas.style.opacity === '1');
+    if (active) {
+      active.state.palette = CONFIG.PALETTES[activePaletteIndex];
+    }
+    stage.style.filter = 'brightness(1.5)';
+    setTimeout(() => stage.style.filter = '', 100);
+  }
+}, { passive: true });
+
+/* ============================================================
+   ПРОГРЕСС
+   ============================================================ */
+let hideProgressTimeout = null;
+stage.addEventListener('mousemove', () => {
+  if (!isPlaying) return;
+  progressWrap.classList.add('visible');
+  if (hideProgressTimeout) clearTimeout(hideProgressTimeout);
+  if (!isPaused) {
+    hideProgressTimeout = setTimeout(() => {
+      progressWrap.classList.remove('visible');
+    }, 2000);
+  }
+});
+
+function formatTime(sec) {
+  if (!isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+audio.addEventListener('timeupdate', () => {
+  const cur = audio.currentTime || 0;
+  const dur = audio.duration || 0;
+  progressFill.style.width = dur ? `${(cur / dur) * 100}%` : '0%';
+  timeLabel.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+});
+
+audio.addEventListener('loadedmetadata', () => {
+  console.log('📼 Метаданные загружены, длительность:', audio.duration);
+  timeLabel.textContent = `0:00 / ${formatTime(audio.duration)}`;
+});
+
+audio.addEventListener('ended', nextTrack);
+audio.addEventListener('playing', () => console.log('🎶 Играет'));
+
+progressBar.addEventListener('click', (e) => {
+  if (!audio.duration) return;
+  const rect = progressBar.getBoundingClientRect();
+  const p = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = p * audio.duration;
+});
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+async function initLayers() {
+  for (let i = 0; i < CONFIG.LAYER_COUNT; i++) {
+    layers.push(createLayer(i));
+  }
+  await preloadImages();
+  layers.forEach(l => l.draw(l.state, performance.now()));
+}
+
+async function init() {
+  await initLayers();
+  loadTrack(0);
+}
+
+init();
+
+window.addEventListener('resize', () => {
+  resizeSpectrum();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && isPlaying && !isPaused) {
+    audio.pause();
+  } else if (!document.hidden && isPlaying && !isPaused) {
+    audio.play().catch(() => {});
+  }
+});
+
+document.addEventListener('click', function once() {
+  initAnalyser();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  document.removeEventListener('click', once);
+}, { once: true });
+
+</script>
+</body>
+</html>
