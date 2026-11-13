@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Классика · Apple Music Style</title>
+    <title>Классика · для слабослышащих</title>
     <style>
         * {
             margin: 0;
@@ -24,7 +24,7 @@
         }
 
         .player-card {
-            max-width: 460px;
+            max-width: 480px;
             width: 100%;
             background: rgba(28, 28, 30, 0.85);
             backdrop-filter: blur(30px);
@@ -35,6 +35,7 @@
             overflow: hidden;
         }
 
+        /* Обложка с визуализатором */
         .cover-wrapper {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -42,7 +43,7 @@
             overflow: hidden;
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
             background: #2c2c2e;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             position: relative;
         }
 
@@ -55,21 +56,45 @@
         }
 
         .cover-wrapper.playing img {
-            transform: scale(1.05);
+            transform: scale(1.03);
+        }
+
+        /* Визуализатор поверх обложки */
+        #visualizer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            opacity: 0.95;
+            pointer-events: none;
+        }
+
+        /* Пульсирующее кольцо вокруг обложки при воспроизведении */
+        .cover-wrapper.playing::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            box-shadow: inset 0 0 40px rgba(255, 45, 85, 0.3);
+            animation: pulseGlow 2s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(255, 45, 85, 0.15); }
+            50% { box-shadow: inset 0 0 50px rgba(255, 45, 85, 0.45); }
         }
 
         .track-info {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             gap: 12px;
         }
 
-        .track-text {
-            flex: 1;
-            min-width: 0;
-        }
+        .track-text { flex: 1; min-width: 0; }
 
         .title {
             font-size: 1.35rem;
@@ -107,16 +132,10 @@
             font-size: 1.4rem;
             flex-shrink: 0;
             -webkit-tap-highlight-color: transparent;
-            position: relative;
         }
 
-        .boost-btn:hover {
-            background: rgba(255, 255, 255, 0.14);
-        }
-
-        .boost-btn:active {
-            transform: scale(0.92);
-        }
+        .boost-btn:hover { background: rgba(255, 255, 255, 0.14); }
+        .boost-btn:active { transform: scale(0.92); }
 
         .boost-btn.active {
             background: #ff2d55;
@@ -129,9 +148,100 @@
             50% { box-shadow: 0 0 40px rgba(255, 45, 85, 0.8); }
         }
 
-        .progress-container {
-            margin-bottom: 8px;
+        /* Пресеты эквалайзера */
+        .presets {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding: 2px 0;
         }
+
+        .presets::-webkit-scrollbar { display: none; }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 14px;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            flex-shrink: 0;
+        }
+
+        .preset-btn:hover { background: rgba(255, 255, 255, 0.14); }
+        .preset-btn:active { transform: scale(0.95); }
+
+        .preset-btn.active {
+            background: #ff2d55;
+            border-color: #ff2d55;
+            color: #ffffff;
+            box-shadow: 0 4px 16px rgba(255, 45, 85, 0.4);
+        }
+
+        /* Компрессор (выравнивание громкости) */
+        .compressor-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .compressor-row:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .compressor-info { display: flex; flex-direction: column; gap: 2px; }
+
+        .compressor-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .compressor-desc {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .toggle-switch {
+            width: 48px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            position: relative;
+            transition: background 0.25s;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: #ffffff;
+            border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .compressor-row.active .toggle-switch { background: #30d158; }
+        .compressor-row.active .toggle-switch::after { transform: translateX(20px); }
+
+        /* Прогресс */
+        .progress-container { margin-bottom: 8px; }
 
         .progress-bar {
             width: 100%;
@@ -140,13 +250,10 @@
             border-radius: 3px;
             overflow: hidden;
             cursor: pointer;
-            position: relative;
             transition: height 0.15s;
         }
 
-        .progress-bar:hover {
-            height: 8px;
-        }
+        .progress-bar:hover { height: 8px; }
 
         .progress-fill {
             height: 100%;
@@ -197,7 +304,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             padding: 0 4px;
         }
 
@@ -237,10 +344,44 @@
             border: none;
         }
 
+        /* Индикатор уровня сигнала */
+        .level-meter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }
+
+        .level-meter-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 60px;
+        }
+
+        .level-bar-bg {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .level-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #30d158 0%, #ffd60a 70%, #ff453a 100%);
+            border-radius: 4px;
+            transition: width 0.08s linear;
+        }
+
         .playlist {
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             padding-top: 12px;
-            max-height: 220px;
+            max-height: 200px;
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,0.2) transparent;
@@ -319,12 +460,11 @@
 
         audio { display: none; }
 
-        /* Индикатор статуса звука */
         .audio-status {
             font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.4);
             text-align: center;
-            padding: 4px;
+            padding: 4px 0 10px;
             min-height: 16px;
         }
 
@@ -346,6 +486,7 @@
     <div class="player-card">
         <div class="cover-wrapper" id="coverWrapper">
             <img id="coverImage" src="https://placehold.co/600x600/1c1c1e/ff2d55?text=Beethoven" alt="Обложка">
+            <canvas id="visualizer"></canvas>
         </div>
 
         <div class="track-info">
@@ -356,6 +497,24 @@
             <button class="boost-btn" id="boostBtn" aria-label="Усилить высокие частоты" title="Усилить высокие частоты">
                 <span>🎚️</span>
             </button>
+        </div>
+
+        <!-- Пресеты эквалайзера -->
+        <div class="presets" id="presets">
+            <button class="preset-btn active" data-preset="flat">Плоский</button>
+            <button class="preset-btn" data-preset="piano">Фортеп.</button>
+            <button class="preset-btn" data-preset="strings">Струнные</button>
+            <button class="preset-btn" data-preset="orchestra">Оркестр</button>
+            <button class="preset-btn" data-preset="voice">Вокал</button>
+        </div>
+
+        <!-- Компрессор -->
+        <div class="compressor-row" id="compressorRow">
+            <div class="compressor-info">
+                <div class="compressor-label">Выравнивание громкости</div>
+                <div class="compressor-desc">Тихие пассажи не пропадут</div>
+            </div>
+            <div class="toggle-switch"></div>
         </div>
 
         <audio id="audioPlayer" preload="auto" crossorigin="anonymous"></audio>
@@ -380,6 +539,14 @@
             <button class="ctrl-btn" id="nextBtn" aria-label="Следующий трек">
                 <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
             </button>
+        </div>
+
+        <!-- Индикатор уровня сигнала -->
+        <div class="level-meter">
+            <span class="level-meter-label">Уровень</span>
+            <div class="level-bar-bg">
+                <div class="level-bar-fill" id="levelBarFill"></div>
+            </div>
         </div>
 
         <div class="volume-row">
@@ -412,13 +579,7 @@
                 },
                 { artist: "Anjunachill", title: "Anjunachill",
                   url: "https://promodj.com/prelisten/7989966/Anjunachill_Anjunachill_On_Air_17_with_No_Solange_17.mp3?hq=1&podcast=1",
-                  cover: "https://cdn.1001tracklists.com/images/artworks/sources/6/7/a/7/161207-artwork-the-anjunadeep-edition-5848458523e77-Medium.jpg" },
-                { artist: "Фредерик Шопен", title: "Ноктюрн оп.9 №2",
-                  url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-                  cover: "https://placehold.co/600x600/2c2c2e/ff2d55?text=Chopin" },
-                { artist: "Пётр Ильич Чайковский", title: "Вальс цветов (Щелкунчик)",
-                  url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-                  cover: "https://placehold.co/600x600/1c1c1e/ff2d55?text=Tchaikovsky" }
+                  cover: "https://cdn.1001tracklists.com/images/artworks/sources/6/7/a/7/161207-artwork-the-anjunadeep-edition-5848458523e77-Medium.jpg" }
             ];
 
             const audio = document.getElementById('audioPlayer');
@@ -438,43 +599,78 @@
             const volumeSlider = document.getElementById('volumeSlider');
             const playlistContainer = document.getElementById('playlistContainer');
             const audioStatus = document.getElementById('audioStatus');
+            const presetsContainer = document.getElementById('presets');
+            const compressorRow = document.getElementById('compressorRow');
+            const levelBarFill = document.getElementById('levelBarFill');
+            const visualizerCanvas = document.getElementById('visualizer');
+            const ctx = visualizerCanvas.getContext('2d');
 
             let currentIndex = 0;
             let isBoosted = false;
             let isDragging = false;
+            let currentPreset = 'flat';
+            let compressorEnabled = false;
 
             // -------------------- WEB AUDIO --------------------
-            // ВАЖНО: sourceNode создаётся ОДИН раз и переиспользуется
             let audioContext = null;
             let sourceNode = null;
             let trebleGain = null;
             let presenceFilter = null;
             let clarityFilter = null;
+            let eqLow = null;
+            let eqMid = null;
+            let eqHigh = null;
+            let compressor = null;
             let masterGain = null;
+            let analyser = null;
             let webAudioReady = false;
+            let rafId = null;
 
             function setStatus(msg, type) {
                 audioStatus.textContent = msg;
                 audioStatus.className = 'audio-status' + (type ? ' ' + type : '');
             }
 
-            // Создаём AudioContext и цепочку ТОЛЬКО когда есть жест пользователя
+            // Настройки пресетов эквалайзера: [low, mid, high] в дБ
+            const PRESETS = {
+                flat:      { low: 0,  mid: 0,   high: 0,   label: 'Плоский' },
+                piano:     { low: 3,  mid: 2,   high: 4,   label: 'Фортепиано' },
+                strings:   { low: -2, mid: 4,   high: 6,   label: 'Струнные' },
+                orchestra: { low: 5,  mid: 0,   high: 5,   label: 'Оркестр' },
+                voice:     { low: -3, mid: 6,   high: 3,   label: 'Вокал' }
+            };
+
             function initAudioContext() {
                 if (webAudioReady) return true;
 
                 try {
                     const AC = window.AudioContext || window.webkitAudioContext;
                     if (!AC) {
-                        setStatus('⚠️ Web Audio не поддерживается — работаем без усиления ВЧ', 'error');
+                        setStatus('⚠️ Web Audio не поддерживается', 'error');
                         return false;
                     }
 
                     audioContext = new AC();
-
-                    // ВАЖНО: sourceNode создаётся один раз на этот <audio>
-                    // Если вызвать повторно на том же элементе — будет ошибка
                     sourceNode = audioContext.createMediaElementSource(audio);
 
+                    // ---- Эквалайзер (3 полосы для пресетов) ----
+                    eqLow = audioContext.createBiquadFilter();
+                    eqLow.type = 'lowshelf';
+                    eqLow.frequency.value = 250;
+                    eqLow.gain.value = 0;
+
+                    eqMid = audioContext.createBiquadFilter();
+                    eqMid.type = 'peaking';
+                    eqMid.frequency.value = 1500;
+                    eqMid.Q.value = 0.9;
+                    eqMid.gain.value = 0;
+
+                    eqHigh = audioContext.createBiquadFilter();
+                    eqHigh.type = 'highshelf';
+                    eqHigh.frequency.value = 6000;
+                    eqHigh.gain.value = 0;
+
+                    // ---- Усиление ВЧ (кнопка boost) ----
                     trebleGain = audioContext.createBiquadFilter();
                     trebleGain.type = 'highshelf';
                     trebleGain.frequency.value = 3000;
@@ -491,18 +687,49 @@
                     clarityFilter.frequency.value = 10000;
                     clarityFilter.gain.value = 0;
 
+                    // ---- Компрессор (выравнивание громкости) ----
+                    compressor = audioContext.createDynamicsCompressor();
+                    compressor.threshold.value = -24;
+                    compressor.knee.value = 30;
+                    compressor.ratio.value = 12;
+                    compressor.attack.value = 0.003;
+                    compressor.release.value = 0.25;
+
+                    // ---- Мастер-громкость ----
                     masterGain = audioContext.createGain();
                     masterGain.gain.value = parseFloat(volumeSlider.value);
 
-                    // Цепочка
-                    sourceNode.connect(trebleGain);
+                    // ---- Анализатор для визуализации ----
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+                    analyser.smoothingTimeConstant = 0.8;
+
+                    // Цепочка:
+                    // source → eqLow → eqMid → eqHigh → trebleGain → presence → clarity
+                    //        → compressor (если включён) → masterGain → analyser → destination
+                    sourceNode.connect(eqLow);
+                    eqLow.connect(eqMid);
+                    eqMid.connect(eqHigh);
+                    eqHigh.connect(trebleGain);
                     trebleGain.connect(presenceFilter);
                     presenceFilter.connect(clarityFilter);
-                    clarityFilter.connect(masterGain);
-                    masterGain.connect(audioContext.destination);
+                    clarityFilter.connect(compressor);
+                    compressor.connect(masterGain);
+                    masterGain.connect(analyser);
+                    analyser.connect(audioContext.destination);
+
+                    // Если компрессор выключен — обходим его (соединяем clarity → masterGain напрямую)
+                    if (!compressorEnabled) {
+                        clarityFilter.disconnect();
+                        clarityFilter.connect(masterGain);
+                    } else {
+                        clarityFilter.disconnect();
+                        clarityFilter.connect(compressor);
+                    }
 
                     webAudioReady = true;
-                    setStatus('✓ Усиление ВЧ готово', 'ok');
+                    applyPreset(currentPreset, false);
+                    setStatus('✓ Звук готов · нажмите ▶', 'ok');
                     return true;
                 } catch (e) {
                     console.error('Web Audio init error:', e);
@@ -511,7 +738,6 @@
                 }
             }
 
-            // Гарантируем, что контекст запущен (resume после жеста)
             async function resumeAudioContext() {
                 if (!audioContext) return;
                 if (audioContext.state === 'suspended') {
@@ -519,9 +745,53 @@
                 }
             }
 
+            // Применение пресета эквалайзера
+            function applyPreset(name, withStatus = true) {
+                if (!webAudioReady) return;
+                const p = PRESETS[name];
+                if (!p) return;
+
+                const now = audioContext.currentTime;
+                eqLow.gain.setTargetAtTime(p.low, now, 0.1);
+                eqMid.gain.setTargetAtTime(p.mid, now, 0.1);
+                eqHigh.gain.setTargetAtTime(p.high, now, 0.1);
+
+                currentPreset = name;
+
+                // Обновляем кнопки
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.preset === name);
+                });
+
+                if (withStatus) {
+                    setStatus(`Эквалайзер: ${p.label} (НЧ:${p.low} СЧ:${p.mid} ВЧ:${p.high})`, '');
+                }
+            }
+
+            // Включение/выключение компрессора
+            function setCompressor(enable) {
+                if (!webAudioReady) return;
+                compressorEnabled = enable;
+
+                if (enable) {
+                    clarityFilter.disconnect();
+                    clarityFilter.connect(compressor);
+                    compressor.connect(masterGain);
+                    compressorRow.classList.add('active');
+                    setStatus('✓ Выравнивание громкости включено', 'ok');
+                } else {
+                    clarityFilter.disconnect();
+                    clarityFilter.connect(masterGain);
+                    compressorRow.classList.remove('active');
+                    setStatus('Выравнивание громкости выключено', '');
+                }
+
+                // Сохраняем настройку
+                try { localStorage.setItem('classic-compressor', enable ? '1' : '0'); } catch (e) {}
+            }
+
             function applyTrebleBoost(enable) {
                 if (!webAudioReady) {
-                    // Пытаемся инициализировать — вдруг ещё не создан
                     if (!initAudioContext()) return;
                 }
 
@@ -531,7 +801,7 @@
                     presenceFilter.gain.setTargetAtTime(6, now, 0.08);
                     clarityFilter.gain.setTargetAtTime(4, now, 0.08);
                     boostBtn.classList.add('active');
-                    setStatus('✓ Усиление ВЧ включено (+12 дБ от 3 кГц)', 'ok');
+                    setStatus('✓ Усиление ВЧ (+12 дБ от 3 кГц)', 'ok');
                 } else {
                     trebleGain.gain.setTargetAtTime(0, now, 0.08);
                     presenceFilter.gain.setTargetAtTime(0, now, 0.08);
@@ -540,6 +810,7 @@
                     setStatus('Усиление ВЧ выключено', '');
                 }
                 isBoosted = enable;
+                try { localStorage.setItem('classic-boost', enable ? '1' : '0'); } catch (e) {}
             }
 
             function syncVolume() {
@@ -547,9 +818,70 @@
                 if (masterGain && audioContext) {
                     masterGain.gain.setTargetAtTime(vol, audioContext.currentTime, 0.02);
                 } else {
-                    // Fallback: если Web Audio не создан — управляем напрямую
                     audio.volume = vol;
                 }
+                try { localStorage.setItem('classic-volume', vol); } catch (e) {}
+            }
+
+            // -------------------- ВИЗУАЛИЗАТОР --------------------
+            function resizeCanvas() {
+                const rect = coverWrapper.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                visualizerCanvas.width = rect.width * dpr;
+                visualizerCanvas.height = 60 * dpr;
+                ctx.scale(dpr, dpr);
+            }
+
+            function drawVisualizer() {
+                rafId = requestAnimationFrame(drawVisualizer);
+
+                if (!analyser) {
+                    // Если Web Audio не создан — рисуем «спящую» линию
+                    ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                    return;
+                }
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+
+                const w = visualizerCanvas.width / (window.devicePixelRatio || 1);
+                const h = 60;
+
+                ctx.clearRect(0, 0, w, h);
+
+                const barCount = 48;
+                const step = Math.floor(bufferLength / barCount);
+                const barWidth = w / barCount;
+
+                for (let i = 0; i < barCount; i++) {
+                    // Берём среднее значение по группе частот
+                    let sum = 0;
+                    for (let j = 0; j < step; j++) {
+                        sum += dataArray[i * step + j];
+                    }
+                    const avg = sum / step;
+                    const barHeight = (avg / 255) * h * 0.9 + 2;
+
+                    // Градиент: от красного к белому
+                    const gradient = ctx.createLinearGradient(0, h, 0, h - barHeight);
+                    gradient.addColorStop(0, 'rgba(255, 45, 85, 0.9)');
+                    gradient.addColorStop(1, 'rgba(255, 200, 220, 0.95)');
+
+                    ctx.fillStyle = gradient;
+                    const x = i * barWidth + 1;
+                    ctx.fillRect(x, h - barHeight, barWidth - 2, barHeight);
+                }
+
+                // Индикатор уровня (RMS)
+                let rmsSum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = (dataArray[i] / 255) ** 2;
+                    rmsSum += v;
+                }
+                const rms = Math.sqrt(rmsSum / bufferLength);
+                const levelPercent = Math.min(100, rms * 200);
+                levelBarFill.style.width = levelPercent + '%';
             }
 
             // -------------------- ИКОНКИ --------------------
@@ -572,8 +904,6 @@
                 coverImage.src = track.cover;
                 coverImage.alt = `Обложка: ${track.artist} — ${track.title}`;
 
-                // ВАЖНО: при смене src Web Audio цепочка продолжает работать,
-                // т.к. sourceNode привязан к <audio>, а не к источнику.
                 audio.src = track.url;
                 audio.load();
 
@@ -585,6 +915,7 @@
 
                 audio.pause();
                 setPlayIcon(false);
+                try { localStorage.setItem('classic-index', index); } catch (e) {}
             }
 
             function updateActivePlaylistItem(index) {
@@ -621,7 +952,6 @@
                     item.appendChild(indicator);
 
                     item.addEventListener('click', async () => {
-                        // Жест пользователя — можно создавать/запускать аудиоконтекст
                         initAudioContext();
                         await resumeAudioContext();
 
@@ -635,7 +965,7 @@
                                 setPlayIcon(true);
                             } catch (e) {
                                 console.warn('Play error:', e);
-                                setStatus('⚠️ Не удалось воспроизвести: ' + e.message, 'error');
+                                setStatus('⚠️ ' + e.message, 'error');
                             }
                         }
                     });
@@ -646,7 +976,6 @@
 
             // -------------------- ВОСПРОИЗВЕДЕНИЕ --------------------
             async function togglePlay() {
-                // Инициализация по жесту
                 initAudioContext();
                 await resumeAudioContext();
 
@@ -655,8 +984,7 @@
                         await audio.play();
                         setPlayIcon(true);
                     } catch (e) {
-                        console.warn('Play error:', e);
-                        setStatus('⚠️ Ошибка воспроизведения: ' + e.message, 'error');
+                        setStatus('⚠️ ' + e.message, 'error');
                     }
                 } else {
                     audio.pause();
@@ -705,11 +1033,10 @@
                 totalTimeEl.textContent = formatTime(audio.duration);
             });
 
-            audio.addEventListener('error', (e) => {
-                console.error('Audio error:', e);
+            audio.addEventListener('error', () => {
                 if (audio.error) {
                     const codes = {1:'прервано',2:'сетевая ошибка',3:'ошибка декодирования',4:'формат не поддерживается'};
-                    setStatus('⚠️ Ошибка загрузки: ' + (codes[audio.error.code] || 'неизвестно'), 'error');
+                    setStatus('⚠️ Ошибка: ' + (codes[audio.error.code] || 'неизвестно'), 'error');
                 }
             });
 
@@ -738,10 +1065,7 @@
                 if (tracks.length === 0) return;
                 currentIndex = (currentIndex - 1 + tracks.length) % tracks.length;
                 loadTrack(currentIndex);
-                try {
-                    await audio.play();
-                    setPlayIcon(true);
-                } catch (e) { console.warn(e); }
+                try { await audio.play(); setPlayIcon(true); } catch (e) {}
             });
 
             nextBtn.addEventListener('click', async () => {
@@ -750,20 +1074,35 @@
                 if (tracks.length === 0) return;
                 currentIndex = (currentIndex + 1) % tracks.length;
                 loadTrack(currentIndex);
-                try {
-                    await audio.play();
-                    setPlayIcon(true);
-                } catch (e) { console.warn(e); }
+                try { await audio.play(); setPlayIcon(true); } catch (e) {}
             });
 
             boostBtn.addEventListener('click', async () => {
-                // Жест пользователя
                 if (!initAudioContext()) {
-                    setStatus('⚠️ Усиление ВЧ недоступно в этом браузере', 'error');
+                    setStatus('⚠️ Усиление ВЧ недоступно', 'error');
                     return;
                 }
                 await resumeAudioContext();
                 applyTrebleBoost(!isBoosted);
+            });
+
+            // Пресеты эквалайзера
+            presetsContainer.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.preset-btn');
+                if (!btn) return;
+
+                if (!initAudioContext()) return;
+                await resumeAudioContext();
+
+                applyPreset(btn.dataset.preset);
+                try { localStorage.setItem('classic-preset', btn.dataset.preset); } catch (e) {}
+            });
+
+            // Компрессор
+            compressorRow.addEventListener('click', async () => {
+                if (!initAudioContext()) return;
+                await resumeAudioContext();
+                setCompressor(!compressorEnabled);
             });
 
             volumeSlider.addEventListener('input', () => {
@@ -772,12 +1111,80 @@
 
             // -------------------- ИНИЦИАЛИЗАЦИЯ --------------------
             function init() {
+                resizeCanvas();
+                drawVisualizer();
+
+                // Восстанавливаем настройки из localStorage
+                let savedIndex = 0;
+                try {
+                    const saved = parseInt(localStorage.getItem('classic-index'));
+                    if (!isNaN(saved) && saved >= 0 && saved < tracks.length) savedIndex = saved;
+                } catch (e) {}
+                currentIndex = savedIndex;
+
                 renderPlaylist();
-                loadTrack(0);
-                volumeSlider.value = 1.0;
-                // ВАЖНО: не вызываем initAudioContext здесь — только по жесту!
+                loadTrack(currentIndex);
+
+                // Громкость
+                let savedVol = 1.0;
+                try {
+                    const v = parseFloat(localStorage.getItem('classic-volume'));
+                    if (!isNaN(v)) savedVol = v;
+                } catch (e) {}
+                volumeSlider.value = savedVol;
+                syncVolume();
+
+                // Буст
+                let savedBoost = false;
+                try { savedBoost = localStorage.getItem('classic-boost') === '1'; } catch (e) {}
+
+                // Пресет
+                let savedPreset = 'flat';
+                try {
+                    const p = localStorage.getItem('classic-preset');
+                    if (p && PRESETS[p]) savedPreset = p;
+                } catch (e) {}
+
+                // Компрессор
+                let savedComp = false;
+                try { savedComp = localStorage.getItem('classic-compressor') === '1'; } catch (e) {}
+
+                // Визуально отмечаем активный пресет
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.preset === savedPreset);
+                });
+                if (savedComp) compressorRow.classList.add('active');
+
+                // Восстанавливаем буст и компрессор после инициализации Web Audio
+                const tryRestore = () => {
+                    if (webAudioReady) {
+                        if (savedBoost) applyTrebleBoost(true);
+                        if (savedComp) setCompressor(true);
+                        applyPreset(savedPreset, false);
+                    } else {
+                        setTimeout(tryRestore, 200);
+                    }
+                };
+
+                // Восстановление только после первого жеста (звук всё равно не зазвучит до него)
+                const restoreOnFirstGesture = () => {
+                    if (!initAudioContext()) return;
+                    resumeAudioContext().then(() => {
+                        if (savedBoost) applyTrebleBoost(true);
+                        if (savedComp) setCompressor(true);
+                        applyPreset(savedPreset, false);
+                    });
+                    document.removeEventListener('click', restoreOnFirstGesture);
+                };
+                document.addEventListener('click', restoreOnFirstGesture, { once: false });
+
                 setStatus('Нажмите ▶ для воспроизведения', '');
             }
+
+            // Ресайз canvas
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+            });
 
             init();
         })();
