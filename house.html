@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chaotic Video Player — Video Layers + Background Audio</title>
+<title>Chaotic Video Player — Media Only</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -43,24 +43,19 @@
     66%      { background-position: 50% 100%, 50% 100%, 0% 50%, 0 0; }
   }
 
-  /* ====== Canvas-слои ====== */
-  .video-layer {
+  /* ====== Слой картинки (canvas) ====== */
+  .img-layer {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    object-fit: cover;
     opacity: 0;
     pointer-events: none;
     will-change: transform, opacity, filter;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
     z-index: 1;
-  }
-  .video-layer.pixelated {
-    image-rendering: pixelated;
+    display: block;
   }
 
-  /* ====== Видео-слои ====== */
+  /* ====== Слой видео ====== */
   .video-file-layer {
     position: absolute;
     top: 0; left: 0;
@@ -70,7 +65,7 @@
     pointer-events: none;
     will-change: transform, opacity, filter;
     z-index: 1;
-    background: #000;
+    background: transparent;
   }
 
   /* ====== BASS SHOCKWAVE ====== */
@@ -490,9 +485,7 @@
     color: #fff;
     font-family: system-ui, sans-serif;
   }
-  #settingsPanel.open {
-    transform: translateX(0);
-  }
+  #settingsPanel.open { transform: translateX(0); }
 
   #settingsPanel h2 {
     font-size: 14px;
@@ -503,7 +496,6 @@
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(0,255,255,0.3);
   }
-
   #settingsPanel h3 {
     font-size: 11px;
     letter-spacing: 2px;
@@ -512,7 +504,6 @@
     margin-top: 20px;
     margin-bottom: 10px;
   }
-
   #settingsPanel label {
     display: block;
     font-size: 11px;
@@ -520,7 +511,6 @@
     margin-bottom: 6px;
     margin-top: 12px;
   }
-
   #settingsPanel input[type="text"],
   #settingsPanel input[type="url"],
   #settingsPanel textarea {
@@ -540,13 +530,11 @@
     border-color: #0ff;
     box-shadow: 0 0 12px rgba(0,255,255,0.4);
   }
-
   #settingsPanel textarea {
     resize: vertical;
     min-height: 80px;
     font-family: monospace;
   }
-
   #settingsPanel button {
     width: 100%;
     padding: 12px;
@@ -566,7 +554,6 @@
     transform: scale(1.02);
     box-shadow: 0 0 20px rgba(0,255,255,0.5);
   }
-
   #settingsPanel button.secondary {
     background: rgba(255,255,255,0.1);
     color: #fff;
@@ -576,10 +563,7 @@
     background: rgba(255,255,255,0.2);
   }
 
-  #videoList,
-  #audioList {
-    margin-top: 10px;
-  }
+  #videoList, #audioList, #imageList { margin-top: 10px; }
 
   .media-item {
     display: flex;
@@ -626,7 +610,7 @@
   @media (prefers-reduced-motion: reduce) {
     #playBtn { animation: none; }
     #brightBase { animation: none; }
-    .video-layer, .video-file-layer { transition: opacity 0.5s ease !important; }
+    .img-layer, .video-file-layer { transition: opacity 0.5s ease !important; }
     #beatFlash, #chaosFlash, #bassShockwave, #bassVignette, #bassChroma { display: none; }
     #titleOverlay.glitch #titleText::before,
     #titleOverlay.glitch #titleText::after { animation: none; }
@@ -661,7 +645,7 @@
 </button>
 
 <div id="status">▶</div>
-<div id="hint">тап — новый кадр · свайп — палитра · двойной тап — пауза</div>
+<div id="hint">тап — новый кадр · свайп — фильтр · двойной тап — пауза</div>
 <div id="audioWarn"></div>
 
 <div id="progressWrap">
@@ -678,10 +662,8 @@
   <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
 </div>
 
-<!-- Кнопка настроек -->
 <button id="settingsBtn" title="Настройки" aria-label="Settings">⚙</button>
 
-<!-- Панель настроек -->
 <div id="settingsPanel">
   <h2>Настройки</h2>
 
@@ -697,12 +679,20 @@
   <button id="addAudioBtn">➕ Добавить аудио</button>
   <div id="audioList"></div>
 
-  <h3>🎬 Видео-слои (фрагменты)</h3>
-  <label>Ссылка на видео (.mp4, .webm) или несколько через запятую</label>
-  <textarea id="videoUrlsInput">https://upload.wikimedia.org/wikipedia/commons/d/da/Aerial_Surfing.webm?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original</textarea>
+  <h3>🎬 Видео-слои</h3>
+  <label>Ссылки на видео (.mp4, .webm) — каждая с новой строки</label>
+  <textarea id="videoUrlsInput" placeholder="https://example.com/clip1.mp4
+https://example.com/clip2.webm"></textarea>
   <button id="addVideoBtn">➕ Добавить видео</button>
-  <button id="reloadVideosBtn" class="secondary">🔄 Перезапустить видео-слои</button>
   <div id="videoList"></div>
+
+  <h3>🖼 Картинки</h3>
+  <label>Ссылки на картинки — каждая с новой строки</label>
+  <textarea id="imageUrlsInput" placeholder="https://example.com/photo1.jpg
+https://example.com/photo2.jpg"></textarea>
+  <button id="addImageBtn">➕ Добавить картинки</button>
+  <button id="resetImagesBtn" class="secondary">🔄 Сбросить к стандартным</button>
+  <div id="imageList"></div>
 
   <h3>💾 Пресеты</h3>
   <button id="savePresetBtn" class="secondary">Сохранить плейлист в localStorage</button>
@@ -717,11 +707,8 @@
    КОНФИГУРАЦИЯ
    ============================================================ */
 const CONFIG = {
-  LAYER_COUNT: 8,             // Меньше canvas-слоёв — освобождаем место для видео
   MAX_FPS: 60,
   REDUCED_MOTION: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-
-  CANVAS_RES_SCALE: 1.0,
 
   SPECTRUM_BARS: 128,
   SPECTRUM_HEIGHT_PX: 180,
@@ -739,6 +726,7 @@ const CONFIG = {
 
   BPM_MIN: 60,
   BPM_MAX: 160,
+  // Интервал смены кадра (мс), привязан к темпу
   FLICKER_SLOW: [400, 900],
   FLICKER_FAST: [40, 100],
 
@@ -759,23 +747,44 @@ const CONFIG = {
   TITLE_GLITCH_MIN_INTERVAL: 280,
 
   DOUBLE_SWITCH_CHANCE: 0.35,
-  PALETTE_JUMP_CHANCE: 0.15,
-  GLITCH_CHANCE: 0.08,
-  MIRROR_CHANCE: 0.2,
 
-  MIN_SCALE: 1.0,
-  MAX_SCALE: 1.5,
-  MAX_BLUR_PX: 0,
-
-  // === ВИДЕО-СЛОИ ===
-  // Сколько видео-слоёв крутится одновременно (как фоновых)
+  // === МЕДИА ===
+  // Сколько видео-слоёв одновременно держим (как фоновых)
   VIDEO_LAYERS_COUNT: 4,
-  // Шанс, что при переключении выберется видео-слой вместо canvas
-  VIDEO_SWITCH_CHANCE: 0.45,
-  // Приглушение звука видео (0..1), чтобы не перебивать музыку
-  VIDEO_VOLUME: 0.0,
   // Длительность одного видео-фрагмента (мс) до переключения
   VIDEO_CLIP_DURATION: [4000, 12000],
+
+  // Ограничения трансформаций — не даём слою стать меньше экрана
+  MIN_SCALE: 1.0,
+  MAX_SCALE: 1.5,
+
+  // Шанс, что при смене кадра выберется видео (иначе — картинка)
+  VIDEO_PICK_CHANCE: 0.5,
+
+  // === ЦВЕТОВЫЕ ФИЛЬТРЫ ===
+  // Каждый фильтр — набор CSS-параметров filter
+  // hue: диапазон сдвига оттенка (deg)
+  // sat: множитель насыщенности
+  // con: множитель контраста
+  // bri: множитель яркости
+  // sepia, grayscale, invert: 0..1
+  // blur: px
+  FILTERS: [
+    { name: 'natural',    hue: [0, 0],        sat: [1.0, 1.2],  con: [1.0, 1.15], bri: [1.0, 1.1] },
+    { name: 'cyberpunk',  hue: [240, 320],    sat: [1.6, 2.4],  con: [1.2, 1.6],  bri: [0.9, 1.1] },
+    { name: 'neon',       hue: [300, 360],    sat: [1.8, 2.6],  con: [1.3, 1.7],  bri: [1.0, 1.2] },
+    { name: 'acid',       hue: [60, 120],     sat: [1.7, 2.5],  con: [1.2, 1.6],  bri: [1.0, 1.2] },
+    { name: 'blood',      hue: [330, 380],    sat: [1.8, 2.4],  con: [1.4, 1.8],  bri: [0.9, 1.05] },
+    { name: 'ice',        hue: [160, 220],    sat: [1.5, 2.2],  con: [1.1, 1.4],  bri: [1.0, 1.15] },
+    { name: 'sepia',      hue: [20, 50],      sat: [0.8, 1.2],  con: [1.1, 1.3],  bri: [0.95, 1.1], sepia: [0.4, 0.8] },
+    { name: 'mono',       hue: [0, 0],        sat: [0, 0.3],    con: [1.3, 1.8],  bri: [1.0, 1.2],  grayscale: [0.8, 1.0] },
+    { name: 'inverted',   hue: [0, 360],      sat: [1.2, 2.0],  con: [1.0, 1.4],  bri: [0.9, 1.1],  invert: [0.85, 1.0] },
+    { name: 'dream',      hue: [180, 300],    sat: [1.3, 2.0],  con: [0.9, 1.1],  bri: [1.1, 1.3] },
+    { name: 'sunset',     hue: [0, 40],       sat: [1.6, 2.2],  con: [1.1, 1.4],  bri: [1.0, 1.15] },
+    { name: 'toxic',      hue: [80, 160],     sat: [2.0, 3.0],  con: [1.3, 1.7],  bri: [0.95, 1.1] },
+    { name: 'ghost',      hue: [200, 260],    sat: [0.5, 1.0],  con: [1.2, 1.5],  bri: [1.1, 1.3] },
+    { name: 'blurred',    hue: [0, 360],      sat: [1.2, 1.8],  con: [1.0, 1.3],  bri: [1.0, 1.1],  blur: [1, 3] },
+  ],
 
   PALETTES: [
     ['#ff004c', '#001eff', '#00fff0'],
@@ -792,7 +801,7 @@ const CONFIG = {
     ['#fceabb', '#f8b500', '#00b09b'],
   ],
 
-  PLAYLIST: [
+   PLAYLIST: [
     {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
       title: 'Group Therapy',
@@ -809,10 +818,11 @@ const CONFIG = {
   // Можно задать вручную или добавить через панель настроек
   VIDEOS: [
     // Примеры (замени на свои):
-    'https://upload.wikimedia.org/wikipedia/commons/8/81/Surfing-1012628%2C_Dingle_Peninsula%2C_Co._Kerry%2C_Ireland.webm?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original',
-    'https://upload.wikimedia.org/wikipedia/commons/d/da/Aerial_Surfing.webm?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original',
+    'https://commons.wikimedia.org/wiki/File:Aerial_Surfing.webm',
+    'https://commons.wikimedia.org/wiki/File:Surfing_in_Tel_Aviv_MVI_3675.webm',
   ],
-
+    
+  // Стандартные картинки (Picsum — CORS-friendly, всегда доступны)
   IMAGE_URLS: [
     'https://videocdn.cdnpk.net/videos/cd4971c7-9a32-591b-93bd-27bc1fe92bf5/horizontal/thumbnails/large.jpg?semt=ais_hybrid&item_id=7230597&w=740&q=80',
     'https://picsum.photos/seed/chaos2/1920/1080',
@@ -826,28 +836,30 @@ const CONFIG = {
     'https://picsum.photos/seed/chaos10/1920/1080',
     'https://picsum.photos/seed/chaos11/1920/1080',
     'https://picsum.photos/seed/chaos12/1920/1080',
+    'https://picsum.photos/seed/chaos13/1920/1080',
+    'https://picsum.photos/seed/chaos14/1920/1080',
+    'https://picsum.photos/seed/chaos15/1920/1080',
+    'https://picsum.photos/seed/chaos16/1920/1080',
   ],
 
-  STORAGE_KEY: 'chaos_player_preset_v1',
+  STORAGE_KEY: 'chaos_player_media_v1',
 };
 
 /* ============================================================
-   ЗАГРУЗКА ПРЕСЕТА
+   ПРЕСЕТ
    ============================================================ */
 function loadPreset() {
   try {
     const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (!raw) return;
     const data = JSON.parse(raw);
-    if (Array.isArray(data.playlist) && data.playlist.length) {
-      CONFIG.PLAYLIST = data.playlist;
-    }
-    if (Array.isArray(data.videos)) {
-      CONFIG.VIDEOS = data.videos;
-    }
+    if (Array.isArray(data.playlist) && data.playlist.length) CONFIG.PLAYLIST = data.playlist;
+    if (Array.isArray(data.videos)) CONFIG.VIDEOS = data.videos;
+    if (Array.isArray(data.images) && data.images.length) CONFIG.IMAGE_URLS = data.images;
     console.log('📥 Пресет загружен:', {
       playlist: CONFIG.PLAYLIST.length,
       videos: CONFIG.VIDEOS.length,
+      images: CONFIG.IMAGE_URLS.length,
     });
   } catch (e) {
     console.warn('Не удалось загрузить пресет:', e);
@@ -859,6 +871,7 @@ function savePreset() {
     localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
       playlist: CONFIG.PLAYLIST,
       videos: CONFIG.VIDEOS,
+      images: CONFIG.IMAGE_URLS,
     }));
     alert('✅ Пресет сохранён');
   } catch (e) {
@@ -898,16 +911,14 @@ const bassChroma = document.getElementById('bassChroma');
 /* ============================================================
    СОСТОЯНИЕ
    ============================================================ */
-let layers = [];          // canvas-слои
+let imgLayers = [];       // canvas-слои для картинок
 let videoLayers = [];     // video-слои
-let videoLayerPool = [];  // все созданные <video>
 let isPlaying = false;
 let isPaused = false;
 let currentTrack = 0;
 let flickerTimer = null;
 let animationFrame = null;
 let lastFrameTime = 0;
-let activePaletteIndex = -1;
 
 let audioCtx = null;
 let analyser = null;
@@ -925,10 +936,8 @@ let lastHighBeatTime = 0;
 let beatPulse = 0;
 let highPulse = 0;
 
-let bpmInstant = 0;
 let bpmSmooth = 0;
 let tempoNorm = 0;
-let beatStreak = 0;
 let beatIntervals = [];
 let eventTimes = [];
 let eventDensity = 0;
@@ -951,11 +960,8 @@ let bassShakeActive = false;
 let bassShakeTimeout = null;
 let shockwaveActive = false;
 
-// === ВИДЕО-СЛОИ (активные) ===
-let activeVideoIdx = -1;
+let activeVideoEl = null;
 let videoSwitchTimer = null;
-let currentVideoLayerEl = null;
-let currentVideoEl = null;
 
 /* ============================================================
    WEBAUDIO ANALYSER
@@ -1097,7 +1103,6 @@ function updateAudioEnergy(now) {
     if (bassDelta > 0.08 && bassEnergy > 0.32 && timeSinceLastBeat > 180) {
       lastBeatTime = now;
       beatPulse = 1.0;
-      beatStreak++;
       eventTimes.push(now);
 
       if (beatIntervals.length > 0) {
@@ -1105,14 +1110,12 @@ function updateAudioEnergy(now) {
         if (interval > 200 && interval < 1500) {
           beatIntervals.push(now);
           if (beatIntervals.length > 10) beatIntervals.shift();
-
           const instantBpm = 60000 / interval;
           if (bpmSmooth === 0) bpmSmooth = instantBpm;
           else {
             const alpha = tempoLocked ? 0.15 : 0.4;
             bpmSmooth = bpmSmooth * (1 - alpha) + instantBpm * alpha;
           }
-          bpmInstant = instantBpm;
           if (beatIntervals.length >= 4) tempoLocked = true;
         }
       } else {
@@ -1186,15 +1189,12 @@ function updateAudioEnergy(now) {
     midEnergy  = Math.max(0.05, Math.min(0.95, midEnergy));
     highEnergy = Math.max(0.05, Math.min(0.95, highEnergy));
 
-    if (bassEnergy > 0.6 && Math.sin(t * 2) > 0.95) {
-      triggerBassImpact(bassEnergy * 0.8);
-    }
+    if (bassEnergy > 0.6 && Math.sin(t * 2) > 0.95) triggerBassImpact(bassEnergy * 0.8);
 
     beatPulse *= 0.9;
     highPulse *= 0.85;
 
     bpmSmooth = 90 + 50 * Math.sin(t * 0.15);
-    bpmInstant = bpmSmooth;
     tempoLocked = true;
 
     const bars = CONFIG.SPECTRUM_BARS;
@@ -1230,6 +1230,115 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
+   ЦВЕТОВЫЕ ФИЛЬТРЫ — выбор и применение
+   ============================================================ */
+function pickRandomFilter() {
+  const f = CONFIG.FILTERS[Math.floor(Math.random() * CONFIG.FILTERS.length)];
+  return f;
+}
+
+function randomInRange(range) {
+  if (!range) return null;
+  return range[0] + Math.random() * (range[1] - range[0]);
+}
+
+/**
+ * Применяет случайный цветовой фильтр из списка
+ * к CSS-фильтру DOM-элемента.
+ */
+function applyRandomFilter(el, filterOverride) {
+  const f = filterOverride || pickRandomFilter();
+
+  const hue = randomInRange(f.hue) || 0;
+  const sat = randomInRange(f.sat) || 1;
+  const con = randomInRange(f.con) || 1;
+  const bri = randomInRange(f.bri) || 1;
+  const sepia = f.sepia ? randomInRange(f.sepia) : 0;
+  const grayscale = f.grayscale ? randomInRange(f.grayscale) : 0;
+  const invert = f.invert ? randomInRange(f.invert) : 0;
+  const blur = f.blur ? randomInRange(f.blur) : 0;
+
+  let filter = `hue-rotate(${hue.toFixed(1)}deg) saturate(${sat.toFixed(2)}) contrast(${con.toFixed(2)}) brightness(${bri.toFixed(2)})`;
+  if (sepia > 0) filter += ` sepia(${sepia.toFixed(2)})`;
+  if (grayscale > 0) filter += ` grayscale(${grayscale.toFixed(2)})`;
+  if (invert > 0) filter += ` invert(${invert.toFixed(2)})`;
+  if (blur > 0) filter += ` blur(${blur.toFixed(1)}px)`;
+
+  el.style.filter = filter;
+  el.dataset.filterName = f.name;
+
+  return f;
+}
+
+/* ============================================================
+   СОЗДАНИЕ CANVAS-СЛОЁВ ПОД КАРТИНКИ
+   ============================================================ */
+function createImageLayer() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'img-layer';
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  const ctx = canvas.getContext('2d', { alpha: false });
+  stage.appendChild(canvas);
+  return {
+    type: 'img',
+    canvas,
+    ctx,
+    currentImg: null,
+  };
+}
+
+function updateImageLayersResolution() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.floor(window.innerWidth * dpr);
+  const h = Math.floor(window.innerHeight * dpr);
+  imgLayers.forEach(l => {
+    if (l.canvas.width !== w || l.canvas.height !== h) {
+      l.canvas.width = w;
+      l.canvas.height = h;
+    }
+  });
+}
+
+/**
+ * Рисует картинку на canvas-слое с запасом (cover).
+ * Никогда не оставляет чёрных полос.
+ */
+function drawImageToLayer(layer, img, transformOverride) {
+  if (!img) return;
+  const W = layer.canvas.width;
+  const H = layer.canvas.height;
+  const ctx = layer.ctx;
+
+  ctx.save();
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // cover-логика с запасом ×1.06 (компенсация поворотов/сдвигов)
+  const imgW = img.width;
+  const imgH = img.height;
+  const scaleCover = Math.max(W / imgW, H / imgH) * 1.06;
+  const dw = imgW * scaleCover;
+  const dh = imgH * scaleCover;
+
+  const t = transformOverride || {};
+  const tx = t.tx || 0;
+  const ty = t.ty || 0;
+  const rot = t.rot || 0;
+  const zoom = t.zoom || 1;
+
+  ctx.translate(W / 2 + tx, H / 2 + ty);
+  ctx.rotate(rot);
+  ctx.scale(zoom, zoom);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+
+  ctx.restore();
+  layer.currentImg = img;
+}
+
+/* ============================================================
    ВИДЕО-СЛОИ
    ============================================================ */
 function createVideoLayer(url, index) {
@@ -1237,68 +1346,140 @@ function createVideoLayer(url, index) {
   video.className = 'video-file-layer';
   video.src = url;
   video.loop = true;
-  video.muted = true;           // звук видео приглушён — играет музыка
-  video.volume = CONFIG.VIDEO_VOLUME;
+  video.muted = true;
   video.playsInline = true;
   video.preload = 'auto';
   video.crossOrigin = 'anonymous';
   video.setAttribute('webkit-playsinline', '');
   video.setAttribute('playsinline', '');
 
-  video.addEventListener('error', (e) => {
+  video.addEventListener('error', () => {
     console.warn('❌ Видео не загрузилось:', url, video.error?.code, video.error?.message);
-    videoLayers = videoLayers.filter(v => v !== video);
-    video.remove();
-    refreshVideoListUI();
   });
 
   video.addEventListener('loadeddata', () => {
     console.log('🎬 Видео готово:', url);
-    refreshVideoListUI();
   });
 
   stage.appendChild(video);
-  return {
-    el: video,
-    url,
-    index,
-    isPlaying: false,
-  };
+  return { el: video, url, index };
 }
 
 function initVideoLayers() {
-  // Убираем старые
   videoLayers.forEach(v => v.el.remove());
   videoLayers = [];
-
-  if (!CONFIG.VIDEOS.length) {
-    console.log('ℹ️ Видео не задано — работают только canvas-слои');
-    return;
-  }
-
+  if (!CONFIG.VIDEOS.length) return;
   CONFIG.VIDEOS.forEach((url, i) => {
-    const vl = createVideoLayer(url, i);
-    videoLayers.push(vl);
+    videoLayers.push(createVideoLayer(url, i));
   });
-  console.log(`🎬 Загружено ${videoLayers.length} видео-слоёв`);
+  console.log(`🎬 Загружено ${videoLayers.length} видео`);
 }
 
-function playVideoLayer(idx) {
-  if (!videoLayers.length) return;
-  if (idx < 0 || idx >= videoLayers.length) return;
+/* ============================================================
+   ИНТЕРНЕТ-КАРТИНКИ
+   ============================================================ */
+function loadImage(url) {
+  return new Promise((resolve) => {
+    if (imageCache.has(url)) { resolve(imageCache.get(url)); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { imageCache.set(url, img); resolve(img); };
+    img.onerror = () => { console.warn('Не загрузилась картинка:', url); resolve(null); };
+    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+  });
+}
 
-  // Останавливаем все
+async function preloadImages() {
+  const toLoad = CONFIG.IMAGE_URLS.slice(0, 8);
+  await Promise.all(toLoad.map(loadImage));
+  console.log(`📸 Загружено ${imageCache.size} картинок`);
+}
+
+/* ============================================================
+   ГЛАВНОЕ: показ случайного медиа с фильтром
+   ============================================================ */
+
+/**
+ * Скрыть все слои (картинки + видео).
+ */
+function hideAllLayers() {
+  imgLayers.forEach(l => { l.canvas.style.opacity = '0'; });
   videoLayers.forEach(v => {
     v.el.style.opacity = '0';
     if (!v.el.paused) v.el.pause();
-    v.isPlaying = false;
+  });
+  activeVideoEl = null;
+  if (videoSwitchTimer) { clearTimeout(videoSwitchTimer); videoSwitchTimer = null; }
+}
+
+/**
+ * Показать картинку (случайную) на выбранном canvas-слое.
+ */
+async function showRandomImage() {
+  // Скрываем видео
+  videoLayers.forEach(v => {
+    v.el.style.opacity = '0';
+    if (!v.el.paused) v.el.pause();
+  });
+  activeVideoEl = null;
+  if (videoSwitchTimer) { clearTimeout(videoSwitchTimer); videoSwitchTimer = null; }
+
+  // Берём случайный слой
+  const layer = imgLayers[Math.floor(Math.random() * imgLayers.length)];
+  const url = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
+  const img = await loadImage(url);
+
+  if (!img) {
+    // Пробуем другую
+    const alt = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
+    const altImg = await loadImage(alt);
+    if (!altImg) return;
+    drawImageToLayer(layer, altImg, getRandomTransform());
+    layer.currentImgUrl = alt;
+  } else {
+    drawImageToLayer(layer, img, getRandomTransform());
+    layer.currentImgUrl = url;
+  }
+
+  // Применяем случайный цветовой фильтр
+  const filter = applyRandomFilter(layer.canvas);
+
+  // Скрываем другие canvas-слои
+  imgLayers.forEach(l => {
+    if (l !== layer) l.canvas.style.opacity = '0';
   });
 
-  // Запускаем выбранный
-  const vl = videoLayers[idx];
-  const video = vl.el;
+  // Показываем нужный
+  layer.canvas.style.opacity = '1';
+  layer.canvas.style.zIndex = '1';
 
-  // Случайная точка старта (для разнообразия)
+  // Лёгкий зум-панч на бит применится позже через CSS transform
+  // (сам рисунок на canvas не меняется, меняется DOM transform)
+  layer.canvas.style.transform = 'scale(1)';
+
+  console.log('🖼 Картинка:', url.split('/').pop(), '| фильтр:', filter.name);
+  return { type: 'image', url, filter: filter.name };
+}
+
+/**
+ * Показать случайное видео с фильтром.
+ */
+function showRandomVideo() {
+  if (!videoLayers.length) return null;
+
+  // Скрываем canvas-слои
+  imgLayers.forEach(l => { l.canvas.style.opacity = '0'; });
+
+  // Скрываем все видео
+  videoLayers.forEach(v => {
+    v.el.style.opacity = '0';
+    if (!v.el.paused) v.el.pause();
+  });
+
+  // Выбираем случайное видео
+  const layer = videoLayers[Math.floor(Math.random() * videoLayers.length)];
+  const video = layer.el;
+
   try {
     if (video.duration && isFinite(video.duration) && video.duration > 2) {
       video.currentTime = Math.random() * (video.duration - 1);
@@ -1306,58 +1487,72 @@ function playVideoLayer(idx) {
   } catch (e) { /* ignore */ }
 
   video.muted = true;
-  video.volume = 0;
-  video.play().catch(err => console.warn('video play failed:', err));
+  video.play().catch(() => {});
 
-  // CSS-трансформации с учётом темпа
-  const tempo = tempoNorm;
-  const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
-  const rotate = (Math.random() - 0.5) * (2 + tempo * 6);
-  const maxShift = (scale - 1) * 50;
-  const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 20, maxShift);
-  const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 20, maxShift);
-  const mirror = Math.random() < CONFIG.MIRROR_CHANCE ? -1 : 1;
-  const hue = Math.random() * 360;
-  const sat = 1.0 + Math.random() * 0.6 + tempo * 0.4;
-  const con = 1.05 + Math.random() * 0.4 + tempo * 0.3;
-  const bright = 1.0 + Math.random() * 0.2 + tempo * 0.15;
-
+  // Случайные трансформации
+  const t = getRandomTransform();
   video.style.transform =
-    `scale(${scale * mirror}, ${scale}) rotate(${rotate}deg) translate(${tx}%, ${ty}%)`;
-  video.style.filter =
-    `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) brightness(${bright})`;
+    `scale(${t.scale}) rotate(${t.rot}deg) translate(${t.tx}%, ${t.ty}%)`;
   video.style.opacity = '1';
-  video.style.zIndex = '2'; // поверх canvas-слоёв
+  video.style.zIndex = '1';
 
-  activeVideoIdx = idx;
-  currentVideoEl = video;
-  vl.isPlaying = true;
+  // Случайный цветовой фильтр
+  const filter = applyRandomFilter(video);
+
+  activeVideoEl = video;
 
   // Авто-переключение через случайное время
   if (videoSwitchTimer) clearTimeout(videoSwitchTimer);
   const [minD, maxD] = CONFIG.VIDEO_CLIP_DURATION;
   const dur = minD + Math.random() * (maxD - minD);
   videoSwitchTimer = setTimeout(() => {
-    if (isPlaying && !isPaused) {
-      // Выбираем другое видео
-      let nextIdx = Math.floor(Math.random() * videoLayers.length);
-      if (videoLayers.length > 1 && nextIdx === activeVideoIdx) {
-        nextIdx = (nextIdx + 1) % videoLayers.length;
-      }
-      playVideoLayer(nextIdx);
-    }
+    if (isPlaying && !isPaused) showNextChaosFrame();
   }, dur);
+
+  console.log('🎬 Видео:', layer.url.split('/').pop(), '| фильтр:', filter.name);
+  return { type: 'video', url: layer.url, filter: filter.name };
 }
 
-function hideVideoLayers() {
-  videoLayers.forEach(v => {
-    v.el.style.opacity = '0';
-    if (!v.el.paused) v.el.pause();
-    v.isPlaying = false;
-  });
-  activeVideoIdx = -1;
-  currentVideoEl = null;
-  if (videoSwitchTimer) { clearTimeout(videoSwitchTimer); videoSwitchTimer = null; }
+/**
+ * Случайные трансформации для слоя.
+ */
+function getRandomTransform() {
+  const tempo = tempoNorm;
+  const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
+  const rot = (Math.random() - 0.5) * (2 + tempo * 12);
+  const maxShift = (scale - 1) * 50;
+  const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 30, maxShift);
+  const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 30, maxShift);
+  const mirror = Math.random() < 0.2 ? -1 : 1;
+  return {
+    scale: scale * mirror,
+    rawScale: scale,
+    rot, tx, ty,
+  };
+}
+
+/**
+ * ГЛАВНАЯ ФУНКЦИЯ: показывает следующий случайный кадр
+ * (видео или картинку с случайным фильтром).
+ */
+function showNextChaosFrame() {
+  // Решаем: видео или картинка
+  const hasVideos = videoLayers.length > 0;
+  const useVideo = hasVideos && Math.random() < CONFIG.VIDEO_PICK_CHANCE;
+
+  // Хаос-вспышка с шансом
+  if (Math.random() < 0.08 * (0.5 + tempoNorm)) triggerChaosFlash();
+
+  // Название мигает с шансом
+  if (isPlaying && !isPaused && Math.random() < CONFIG.TITLE_FLASH_ON_SWITCH) {
+    flashTitleOnce();
+  }
+
+  if (useVideo) {
+    showRandomVideo();
+  } else {
+    showRandomImage();
+  }
 }
 
 /* ============================================================
@@ -1378,44 +1573,28 @@ function setTitleText(index) {
   titleText.dataset.text = title;
   const sub = document.getElementById('titleSub');
   if (sub) sub.textContent = artist ? `now playing · ${artist}` : 'now playing';
-
-  // Media Session API — обновляем метаданные для системного пульта
   updateMediaSession();
 }
 
-/**
- * Media Session API — показ названия трека на lock-screen
- * и управление с системного пульта (для фонового воспроизведения)
- */
 function updateMediaSession() {
   if (!('mediaSession' in navigator)) return;
   const t = CONFIG.PLAYLIST[currentTrack];
   if (!t) return;
-
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: t.title || t.shortTitle || 'Unknown',
       artist: t.artist || '',
       album: 'Chaotic Video Player',
-      artwork: [
-        { src: 'https://picsum.photos/seed/cover' + currentTrack + '/512/512', sizes: '512x512', type: 'image/jpeg' },
-      ],
+      artwork: [{ src: 'https://picsum.photos/seed/cover' + currentTrack + '/512/512', sizes: '512x512', type: 'image/jpeg' }],
     });
-
-    navigator.mediaSession.setActionHandler('play', () => {
-      if (isPaused) togglePause();
-    });
-    navigator.mediaSession.setActionHandler('pause', () => {
-      if (!isPaused) togglePause();
-    });
+    navigator.mediaSession.setActionHandler('play', () => { if (isPaused) togglePause(); });
+    navigator.mediaSession.setActionHandler('pause', () => { if (!isPaused) togglePause(); });
     navigator.mediaSession.setActionHandler('previoustrack', () => {
       loadTrack(currentTrack - 1);
       if (isPlaying && !isPaused) audio.play().catch(() => {});
     });
     navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
-  } catch (e) {
-    console.warn('Media Session error:', e);
-  }
+  } catch (e) { /* ignore */ }
 }
 
 function flashTitleOnce() {
@@ -1442,7 +1621,6 @@ function flashTitleOnce() {
 
   const [minD, maxD] = CONFIG.TITLE_FLASH_DURATION;
   const dur = minD + Math.random() * (maxD - minD);
-
   const hideTimer = setTimeout(() => {
     titleOverlay.classList.remove('visible');
     titleOverlay.style.transition = 'opacity 0.15s ease';
@@ -1455,7 +1633,6 @@ function flashTitleOnce() {
       titleFlashTimers.push(doubleTimer);
     }
   }, dur);
-
   titleFlashTimers.push(hideTimer);
 }
 
@@ -1465,7 +1642,6 @@ function showTitleIntro() {
   titleOverlay.style.transform = 'translate(-50%, -50%)';
   titleOverlay.classList.remove('glitch', 'beat');
   titleOverlay.classList.add('visible', 'intro');
-
   const t1 = setTimeout(() => {
     titleOverlay.classList.remove('intro');
     scheduleNextTitleFlash();
@@ -1475,8 +1651,7 @@ function showTitleIntro() {
 
 function scheduleNextTitleFlash() {
   if (!isPlaying || isPaused) return;
-  const minI = 400;
-  const maxI = 2500;
+  const minI = 400, maxI = 2500;
   const delay = maxI - (maxI - minI) * tempoNorm + Math.random() * 800;
   const t = setTimeout(() => {
     if (isPlaying && !isPaused) {
@@ -1567,406 +1742,6 @@ function drawSpectrum() {
 }
 
 /* ============================================================
-   ИНТЕРНЕТ-КАРТИНКИ
-   ============================================================ */
-function loadImage(url) {
-  return new Promise((resolve) => {
-    if (imageCache.has(url)) { resolve(imageCache.get(url)); return; }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { imageCache.set(url, img); resolve(img); };
-    img.onerror = () => { console.warn('Не загрузилась картинка:', url); resolve(null); };
-    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-  });
-}
-
-async function preloadImages() {
-  const toLoad = CONFIG.IMAGE_URLS.slice(0, 6);
-  for (const url of toLoad) await loadImage(url);
-  console.log(`📸 Загружено ${imageCache.size} картинок`);
-}
-
-/* ============================================================
-   СОЗДАНИЕ CANVAS-СЛОЁВ
-   ============================================================ */
-function makeRandomState() {
-  const pal = CONFIG.PALETTES[activePaletteIndex >= 0
-    ? activePaletteIndex
-    : Math.floor(Math.random() * CONFIG.PALETTES.length)];
-  return {
-    hueShift: Math.random() * 360,
-    seed: Math.random() * 1000,
-    mode: Math.floor(Math.random() * 9),
-    palette: pal,
-    voroPoints: makeVoronoiPoints(15 + Math.floor(Math.random() * 20)),
-    imgUrl: CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)],
-    imgBlend: Math.floor(Math.random() * 3),
-  };
-}
-
-function makeVoronoiPoints(n) {
-  const pts = [];
-  for (let i = 0; i < n; i++) {
-    pts.push({
-      x: Math.random(), y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0004,
-      vy: (Math.random() - 0.5) * 0.0004,
-    });
-  }
-  return pts;
-}
-
-function createLayer(index) {
-  const canvas = document.createElement('canvas');
-  canvas.className = 'video-layer';
-  const dpr = window.devicePixelRatio || 1;
-  const w = Math.max(960, Math.floor(window.innerWidth * dpr * CONFIG.CANVAS_RES_SCALE));
-  const h = Math.max(540, Math.floor(window.innerHeight * dpr * CONFIG.CANVAS_RES_SCALE));
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d', {
-    willReadFrequently: true,
-    alpha: false,
-    desynchronized: true,
-  });
-  stage.appendChild(canvas);
-  return {
-    type: 'canvas',
-    canvas, ctx,
-    state: makeRandomState(),
-    draw: drawScene.bind(null, ctx, canvas),
-  };
-}
-
-function updateLayersResolution() {
-  const dpr = window.devicePixelRatio || 1;
-  const w = Math.max(960, Math.floor(window.innerWidth * dpr * CONFIG.CANVAS_RES_SCALE));
-  const h = Math.max(540, Math.floor(window.innerHeight * dpr * CONFIG.CANVAS_RES_SCALE));
-  layers.forEach(l => {
-    if (l.canvas.width !== w || l.canvas.height !== h) {
-      l.canvas.width = w;
-      l.canvas.height = h;
-    }
-  });
-}
-
-/* ============================================================
-   ГЕНЕРАТИВНЫЕ РЕЖИМЫ (сокращённо — те же что раньше)
-   ============================================================ */
-function drawScene(ctx, canvas, state, now) {
-  const W = canvas.width, H = canvas.height;
-  const time = now * 0.001;
-  const pal = state.palette;
-  const bass = bassEnergy;
-  const beat = beatPulse;
-  ctx.imageSmoothingEnabled = false;
-  ctx.save();
-  ctx.fillStyle = pal[0];
-  ctx.fillRect(0, 0, W, H);
-  switch (state.mode) {
-    case 0: drawNoise(ctx, W, H, state, time, pal); break;
-    case 1: drawStripes(ctx, W, H, state, time, pal); break;
-    case 2: drawRings(ctx, W, H, state, time, pal, beat); break;
-    case 3: drawBlocks(ctx, W, H, state, time, pal); break;
-    case 4: drawTunnel(ctx, W, H, state, time, pal, bass, beat); break;
-    case 5: drawVHS(ctx, W, H, state, time, pal); break;
-    case 6: drawPlasma(ctx, W, H, state, time, pal); break;
-    case 7: drawVoronoi(ctx, W, H, state, time, pal); break;
-    case 8: drawImage(ctx, W, H, state, time, pal); break;
-  }
-  if (Math.random() < 0.2 + highEnergy * 0.6 + tempoNorm * 0.2) {
-    ctx.globalCompositeOperation = 'screen';
-    const n = 1 + Math.floor(highEnergy * 6 + tempoNorm * 3);
-    for (let i = 0; i < n; i++) {
-      const gx = Math.random() * W;
-      const gy = Math.random() * H;
-      ctx.fillStyle = `hsla(${Math.random()*360}, 100%, 60%, ${0.2 + highEnergy * 0.5})`;
-      ctx.fillRect(gx, gy, Math.random() * 300 + 50, Math.random() * 12 + 2);
-    }
-    ctx.globalCompositeOperation = 'source-over';
-  }
-  ctx.restore();
-}
-
-function drawImage(ctx, W, H, state, time, pal) {
-  const img = imageCache.get(state.imgUrl);
-  if (!img) {
-    const g = ctx.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, pal[0]); g.addColorStop(0.5, pal[1]); g.addColorStop(1, pal[2]);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); return;
-  }
-  const zoom = 1.05 + beatPulse * 0.06 + bassEnergy * 0.1 + highPulse * 0.04 + tempoNorm * 0.03;
-  const rot = (time * (0.02 + tempoNorm * 0.05) + state.seed) % (Math.PI * 2);
-  const shakeAmt = (beatPulse + highPulse) * (4 + tempoNorm * 8);
-  const shakeX = (Math.random() - 0.5) * shakeAmt;
-  const shakeY = (Math.random() - 0.5) * shakeAmt;
-  ctx.save();
-  ctx.translate(W / 2 + shakeX, H / 2 + shakeY);
-  ctx.rotate(Math.sin(rot) * (0.015 + tempoNorm * 0.025));
-  ctx.scale(zoom, zoom);
-  const hue = (state.hueShift + time * 15 + bassEnergy * 40 + tempoNorm * 60) % 360;
-  const dw = W * 1.06, dh = H * 1.06;
-  ctx.imageSmoothingEnabled = false;
-  ctx.globalAlpha = 1.0;
-  ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = 0.1 + beatPulse * 0.15 + tempoNorm * 0.08;
-  ctx.fillStyle = `hsla(${hue}, 100%, 55%, 0.5)`;
-  ctx.fillRect(-dw / 2, -dh / 2, dw, dh);
-  if (beatPulse > 0.35 || highPulse > 0.35) {
-    ctx.globalAlpha = Math.max(beatPulse, highPulse) * 0.25;
-    const split = 4 * beatPulse * (1 + tempoNorm);
-    ctx.drawImage(img, -dw / 2 + split, -dh / 2, dw, dh);
-  }
-  ctx.restore();
-  ctx.imageSmoothingEnabled = false;
-}
-
-function drawNoise(ctx, W, H, state, time, pal) {
-  const blockSize = Math.max(2, Math.floor(Math.min(W, H) / 200));
-  const sw = Math.floor(W / blockSize);
-  const sh = Math.floor(H / blockSize);
-  const img = ctx.createImageData(sw, sh);
-  const d = img.data;
-  const hueBase = state.hueShift + time * 60 + bassEnergy * 180;
-  const highBoost = 1 + highEnergy * 0.8;
-  for (let i = 0; i < d.length; i += 4) {
-    const v = 120 + Math.random() * 135 * highBoost;
-    d[i]     = (v + hueBase) % 255;
-    d[i + 1] = (v * 0.7 + 100 + midEnergy * 100) % 255;
-    d[i + 2] = (255 - v * 0.4) % 255;
-    d[i + 3] = 255;
-  }
-  const small = document.createElement('canvas');
-  small.width = sw; small.height = sh;
-  small.getContext('2d').putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(small, 0, 0, W, H);
-}
-
-function drawStripes(ctx, W, H, state, time, pal) {
-  const speedMul = 1 + tempoNorm * 2;
-  const stripeW = 40 + 30 * Math.sin(time * 2 * speedMul + state.seed) + bassEnergy * 60;
-  const offset = (time * 200 * speedMul * (1 + bassEnergy) + state.seed * 100) % (stripeW * 2);
-  ctx.save();
-  ctx.translate(Math.round(offset), 0);
-  for (let x = -stripeW * 2; x < W + stripeW * 2; x += stripeW * 2) {
-    ctx.fillStyle = pal[1];
-    ctx.fillRect(Math.round(x), 0, Math.round(stripeW), H);
-    ctx.fillStyle = pal[2];
-    ctx.fillRect(Math.round(x + stripeW), 0, Math.round(stripeW), H);
-  }
-  ctx.restore();
-  ctx.globalCompositeOperation = 'screen';
-  const g = ctx.createLinearGradient(0, 0, W, H);
-  g.addColorStop(0, `rgba(255,255,255,${0.05 + midEnergy * 0.1})`);
-  g.addColorStop(1, `rgba(255,255,255,${0.1 + midEnergy * 0.2 + highPulse * 0.15})`);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.globalCompositeOperation = 'source-over';
-}
-
-function drawRings(ctx, W, H, state, time, pal, beat) {
-  const speedMul = 1 + tempoNorm * 1.5;
-  const cx = W / 2 + Math.sin(time * 3 * speedMul + state.seed) * W * 0.3;
-  const cy = H / 2 + Math.cos(time * 2.5 * speedMul + state.seed) * H * 0.3;
-  const maxR = Math.hypot(W, H);
-  const n = 20 + Math.floor(bassEnergy * 20);
-  for (let i = 0; i < n; i++) {
-    const r = ((time * 80 * speedMul * (1 + bassEnergy * 2 + beat * 0.5) + i * 60 + state.seed * 50) % maxR);
-    ctx.beginPath();
-    ctx.arc(Math.round(cx), Math.round(cy), Math.round(r), 0, Math.PI * 2);
-    ctx.strokeStyle = pal[i % pal.length];
-    ctx.lineWidth = Math.round(18 + Math.sin(time + i) * 12 + bassEnergy * 25 + beat * 15);
-    ctx.globalAlpha = 0.75;
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-}
-
-function drawBlocks(ctx, W, H, state, time, pal) {
-  const cellW = 80, cellH = 60;
-  const cols = Math.ceil(W / cellW), rows = Math.ceil(H / cellH);
-  const speedMul = 1 + tempoNorm * 2;
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const n = Math.sin(x * 0.7 + time * 3 * speedMul + state.seed) *
-                Math.cos(y * 0.5 + time * 2 * speedMul);
-      const show = n > 0.2 - bassEnergy * 0.4 - beatPulse * 0.3;
-      ctx.fillStyle = show ? pal[(x + y) % pal.length] : pal[(x * 2 + y) % pal.length];
-      ctx.globalAlpha = show ? 1 : 0.6;
-      const shiftAmt = 20 + bassEnergy * 60;
-      const shiftX = Math.sin(time * 5 * speedMul + y) * shiftAmt;
-      const shiftY = Math.cos(time * 4 * speedMul + x) * shiftAmt;
-      ctx.fillRect(Math.round(x * cellW + shiftX), Math.round(y * cellH + shiftY), cellW - 4, cellH - 4);
-    }
-  }
-  ctx.globalAlpha = 1;
-}
-
-function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
-  const cx = W / 2, cy = H / 2;
-  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.6);
-  bgGrad.addColorStop(0, pal[1]); bgGrad.addColorStop(0.5, pal[0]); bgGrad.addColorStop(1, pal[2]);
-  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
-  const rings = 35;
-  const speed = (1 + bassEnergy * 3 + beat * 2 + highPulse * 0.5) * (1 + tempoNorm * 2.5);
-  const hueBase = state.hueShift + time * 40 + highEnergy * 80;
-  for (let i = rings; i > 0; i--) {
-    const t = (i + time * speed * 0.8) % rings;
-    const progress = t / rings;
-    const r = progress * Math.hypot(W, H) * 0.75;
-    const thickness = Math.round((4 + (1 - progress) * 18) * (1 + beat * 0.4));
-    const hue = (hueBase + i * 18 + time * 60) % 360;
-    const lightness = 55 + bass * 30 + beat * 15 + highEnergy * 20;
-    ctx.beginPath();
-    ctx.arc(Math.round(cx), Math.round(cy), Math.round(r), 0, Math.PI * 2);
-    ctx.strokeStyle = `hsla(${hue}, 100%, ${Math.min(90, lightness)}%, ${0.85 - progress * 0.6})`;
-    ctx.lineWidth = thickness;
-    ctx.stroke();
-  }
-  ctx.save();
-  ctx.translate(Math.round(cx), Math.round(cy));
-  const rays = 16;
-  const raySpeed = time * (0.5 + beat * 1.5) * (1 + tempoNorm);
-  for (let i = 0; i < rays; i++) {
-    const a = (i / rays) * Math.PI * 2 + raySpeed;
-    const len = Math.hypot(W, H);
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(Math.round(Math.cos(a) * len), Math.round(Math.sin(a) * len));
-    ctx.strokeStyle = `hsla(${(i * 25 + state.hueShift) % 360}, 100%, 65%, ${0.12 + midEnergy * 0.25 + beat * 0.15})`;
-    ctx.lineWidth = Math.round(2 + midEnergy * 8 + beat * 6 + highPulse * 3);
-    ctx.stroke();
-  }
-  ctx.restore();
-  const glow = Math.max(0.25, beat, highPulse);
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 180 * glow);
-  grad.addColorStop(0, `hsla(${(hueBase + 180) % 360}, 100%, 80%, ${glow * 0.7})`);
-  grad.addColorStop(1, 'transparent');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-}
-
-function drawVHS(ctx, W, H, state, time, pal) {
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, pal[0]); g.addColorStop(0.5, pal[1]); g.addColorStop(1, pal[2]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  const strips = 20 + Math.floor(bassEnergy * 40);
-  const speedMul = 1 + tempoNorm;
-  for (let i = 0; i < strips; i++) {
-    const y = Math.round(Math.random() * H);
-    const h = Math.round(1 + Math.random() * 8);
-    const shift = Math.round((Math.random() - 0.5) * 80 * speedMul * (1 + bassEnergy * 2));
-    ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = `hsla(${Math.random() * 60 + 180}, 100%, 65%, ${0.35 + Math.random() * 0.4})`;
-    ctx.fillRect(shift, y, W, h);
-    ctx.fillStyle = `hsla(${Math.random() * 60 + 300}, 100%, 65%, ${0.35 + Math.random() * 0.4})`;
-    ctx.fillRect(-shift, y, W, h);
-  }
-  ctx.globalCompositeOperation = 'source-over';
-  const dots = 200 + Math.floor(highEnergy * 1200);
-  for (let i = 0; i < dots; i++) {
-    ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.5})`;
-    ctx.fillRect(Math.round(Math.random() * W), Math.round(Math.random() * H), 2, 2);
-  }
-  ctx.fillStyle = 'rgba(0,0,0,0.05)';
-  for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
-}
-
-function drawPlasma(ctx, W, H, state, time, pal) {
-  const pw = 120, ph = 68;
-  const small = document.createElement('canvas');
-  small.width = pw; small.height = ph;
-  const sctx = small.getContext('2d');
-  const img = sctx.createImageData(pw, ph);
-  const d = img.data;
-  const speedMul = 1 + tempoNorm * 1.5;
-  const t = time * speedMul * (1 + bassEnergy * 2 + highEnergy);
-  const amp = 1 + midEnergy * 2 + highEnergy * 1.5;
-  for (let y = 0; y < ph; y++) {
-    for (let x = 0; x < pw; x++) {
-      const v = Math.sin(x * 0.15 + t) + Math.sin(y * 0.2 + t * 0.8) +
-                Math.sin((x + y) * 0.1 + t * 1.2) +
-                Math.sin(Math.hypot(x - pw / 2, y - ph / 2) * 0.15 - t * 1.5) * amp;
-      const idx = (y * pw + x) * 4;
-      const hue = ((v + 4) / 8) * 360;
-      const [r, g, b] = hslToRgb(hue / 360, 0.95, 0.6);
-      d[idx] = r; d[idx + 1] = g; d[idx + 2] = b; d[idx + 3] = 255;
-    }
-  }
-  sctx.putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(small, 0, 0, W, H);
-}
-
-function drawVoronoi(ctx, W, H, state, time, pal) {
-  const pts = state.voroPoints;
-  const speedMul = (1 + bassEnergy * 3 + highEnergy) * (1 + tempoNorm * 2);
-  pts.forEach(p => {
-    p.x += p.vx * speedMul; p.y += p.vy * speedMul;
-    if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0;
-    if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0;
-  });
-  const scale = 6;
-  const pw = Math.floor(W / scale), ph = Math.floor(H / scale);
-  const small = document.createElement('canvas');
-  small.width = pw; small.height = ph;
-  const sctx = small.getContext('2d');
-  const img = sctx.createImageData(pw, ph);
-  const d = img.data;
-  const paletteRgb = pal.map(hex => hexToRgb(hex));
-  for (let y = 0; y < ph; y++) {
-    for (let x = 0; x < pw; x++) {
-      const nx = x / pw, ny = y / ph;
-      let minDist = Infinity, nearest = 0;
-      for (let i = 0; i < pts.length; i++) {
-        const dx = pts[i].x - nx, dy = pts[i].y - ny;
-        const dist = dx * dx + dy * dy;
-        if (dist < minDist) { minDist = dist; nearest = i; }
-      }
-      const col = paletteRgb[nearest % paletteRgb.length];
-      const idx = (y * pw + x) * 4;
-      const edge = minDist < 0.0008 ? 0.6 : 1;
-      d[idx] = col[0] + (255 - col[0]) * (1 - edge);
-      d[idx + 1] = col[1] + (255 - col[1]) * (1 - edge);
-      d[idx + 2] = col[2] + (255 - col[2]) * (1 - edge);
-      d[idx + 3] = 255;
-    }
-  }
-  sctx.putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(small, 0, 0, W, H);
-}
-
-/* ============================================================
-   ЦВЕТОВЫЕ УТИЛИТЫ
-   ============================================================ */
-function hslToRgb(h, s, l) {
-  let r, g, b;
-  if (s === 0) { r = g = b = l; }
-  else {
-    const hue2rgb = (p, q, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-}
-
-function hexToRgb(hex) {
-  const h = hex.replace('#', '');
-  return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
-}
-
-/* ============================================================
    ХАОС-ВСПЫШКА
    ============================================================ */
 function triggerChaosFlash() {
@@ -1980,94 +1755,6 @@ function triggerChaosFlash() {
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — теперь с видео
-   ============================================================ */
-function switchRandomLayer() {
-  const reduce = CONFIG.REDUCED_MOTION;
-  const tempo = tempoNorm;
-
-  if (Math.random() < CONFIG.PALETTE_JUMP_CHANCE) activePaletteIndex = -1;
-  if (Math.random() < CONFIG.GLITCH_CHANCE * (0.5 + tempo)) triggerChaosFlash();
-  if (isPlaying && !isPaused && Math.random() < CONFIG.TITLE_FLASH_ON_SWITCH) flashTitleOnce();
-
-  // === РЕШЕНИЕ: видео или canvas? ===
-  const useVideo = videoLayers.length > 0 && Math.random() < CONFIG.VIDEO_SWITCH_CHANCE;
-
-  if (useVideo) {
-    // Скрываем все canvas-слои
-    layers.forEach(layer => {
-      layer.canvas.style.opacity = '0';
-      layer.canvas.style.zIndex = '1';
-    });
-
-    // Показываем видео-слой
-    let nextIdx;
-    if (videoLayers.length === 1) nextIdx = 0;
-    else {
-      nextIdx = Math.floor(Math.random() * videoLayers.length);
-      if (nextIdx === activeVideoIdx) nextIdx = (nextIdx + 1) % videoLayers.length;
-    }
-    playVideoLayer(nextIdx);
-    return;
-  }
-
-  // === CANVAS-режим ===
-  // Скрываем видео-слои
-  hideVideoLayers();
-
-  // Показываем случайный canvas-слой
-  const idx = Math.floor(Math.random() * layers.length);
-  layers.forEach((layer, i) => {
-    const el = layer.canvas;
-    const isActive = i === idx;
-    if (isActive) {
-      layer.state = makeRandomState();
-      layer.state.palette = CONFIG.PALETTES[activePaletteIndex >= 0
-        ? activePaletteIndex
-        : Math.floor(Math.random() * CONFIG.PALETTES.length)];
-
-      if (layer.state.mode === 8) {
-        layer.state.imgUrl = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
-        loadImage(layer.state.imgUrl);
-        el.classList.remove('pixelated');
-      } else if (layer.state.mode === 7 && Math.random() < 0.5) {
-        el.classList.add('pixelated');
-      } else {
-        el.classList.remove('pixelated');
-      }
-
-      if (reduce) {
-        el.style.transform = 'none';
-        el.style.filter = 'none';
-      } else {
-        const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
-        const rotate = (Math.random() - 0.5) * (2 + tempo * 10);
-        const skewX = (Math.random() - 0.5) * (1 + tempo * 8);
-        const skewY = (Math.random() - 0.5) * (1 + tempo * 8);
-        const maxShift = (scale - 1) * 50;
-        const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 25, maxShift);
-        const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 25, maxShift);
-        const hue = Math.random() * 360;
-        const sat = 1.0 + Math.random() * 0.6 + tempo * 0.4;
-        const con = 1.05 + Math.random() * 0.4 + tempo * 0.3;
-        const bright = 1.0 + Math.random() * 0.2 + tempo * 0.15;
-        const mirror = Math.random() < CONFIG.MIRROR_CHANCE ? -1 : 1;
-        el.style.clipPath = '';
-        el.style.transform =
-          `scale(${scale * mirror}, ${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
-        el.style.filter = `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) brightness(${bright})`;
-      }
-      el.style.opacity = '1';
-      el.style.zIndex = '1';
-    } else {
-      el.style.opacity = '0';
-      el.style.zIndex = '1';
-      el.style.clipPath = '';
-    }
-  });
-}
-
-/* ============================================================
    АНИМАЦИЯ
    ============================================================ */
 function animate(now) {
@@ -2078,36 +1765,36 @@ function animate(now) {
     updateAudioEnergy(now);
     drawSpectrum();
 
-    // Анимация canvas-слоёв
-    layers.forEach((layer) => {
-      if (layer.canvas.style.opacity === '1') {
-        layer.draw(layer.state, now);
-        if (!CONFIG.REDUCED_MOTION && Math.random() < 0.03) {
-          const el = layer.canvas;
-          const pulseScale = Math.max(CONFIG.MIN_SCALE, 1 + beatPulse * 0.06 + bassEnergy * 0.04);
-          el.style.transform = el.style.transform.replace(
+    // Пульсация активного видео на бит
+    if (activeVideoEl && !CONFIG.REDUCED_MOTION) {
+      const pulse = 1 + beatPulse * 0.05 + bassEnergy * 0.03;
+      // не даём scale уйти ниже 1
+      const cur = activeVideoEl.style.transform.match(/scale\(([\d.-]+)/);
+      if (cur) {
+        const baseScale = Math.abs(parseFloat(cur[1]));
+        const newScale = Math.max(CONFIG.MIN_SCALE, baseScale) * pulse;
+        activeVideoEl.style.transform = activeVideoEl.style.transform.replace(
+          /scale\(([\d.-]+)(?:,\s*([\d.-]+))?\)/,
+          `scale(${newScale}, ${newScale})`
+        );
+      }
+    }
+
+    // Пульсация активной картинки на бит
+    if (!CONFIG.REDUCED_MOTION) {
+      imgLayers.forEach(l => {
+        if (l.canvas.style.opacity === '1' && Math.random() < 0.05) {
+          const pulse = 1 + beatPulse * 0.05 + bassEnergy * 0.03;
+          l.canvas.style.transform = l.canvas.style.transform.replace(
             /scale\(([\d.]+)(?:,\s*([\d.]+))?\)/,
             (m, sx, sy) => {
-              const s1 = Math.max(CONFIG.MIN_SCALE, parseFloat(sx) * pulseScale);
-              const s2 = Math.max(CONFIG.MIN_SCALE, parseFloat(sy || sx) * pulseScale);
+              const s1 = Math.max(CONFIG.MIN_SCALE, parseFloat(sx) * pulse);
+              const s2 = Math.max(CONFIG.MIN_SCALE, parseFloat(sy || sx) * pulse);
               return `scale(${s1}, ${s2})`;
             }
           );
         }
-      }
-    });
-
-    // Пульсация видео на бит
-    if (currentVideoEl && currentVideoEl.style.opacity === '1' && !CONFIG.REDUCED_MOTION) {
-      const pulseScale = 1 + beatPulse * 0.05 + bassEnergy * 0.03;
-      currentVideoEl.style.transform = currentVideoEl.style.transform.replace(
-        /scale\(([\d.]+)(?:,\s*([\d.]+))?\)/,
-        (m, sx, sy) => {
-          const s1 = Math.max(CONFIG.MIN_SCALE, parseFloat(sx) * pulseScale);
-          const s2 = Math.max(CONFIG.MIN_SCALE, parseFloat(sy || sx) * pulseScale);
-          return `scale(${s1}, ${s2})`;
-        }
-      );
+      });
     }
   }
   animationFrame = requestAnimationFrame(animate);
@@ -2123,7 +1810,7 @@ function startChaos() {
 function scheduleFlicker() {
   if (CONFIG.REDUCED_MOTION) {
     flickerTimer = setTimeout(() => {
-      switchRandomLayer();
+      showNextChaosFrame();
       scheduleFlicker();
     }, 800);
     return;
@@ -2131,22 +1818,13 @@ function scheduleFlicker() {
   const jitter = 0.3 + tempoNorm * 0.7;
   const delay = nextFlickerDelay * (0.7 + Math.random() * jitter * 0.6);
   flickerTimer = setTimeout(() => {
-    const switchChance = 0.55 + tempoNorm * 0.4;
+    const switchChance = 0.7 + tempoNorm * 0.25;
     if (Math.random() < switchChance) {
-      switchRandomLayer();
+      showNextChaosFrame();
       if (Math.random() < CONFIG.DOUBLE_SWITCH_CHANCE) {
         setTimeout(() => {
-          if (isPlaying && !isPaused) switchRandomLayer();
+          if (isPlaying && !isPaused) showNextChaosFrame();
         }, 30 + Math.random() * 80);
-      }
-    } else {
-      const active = layers.find(l => l.canvas.style.opacity === '1');
-      if (active) {
-        active.state = makeRandomState();
-        if (active.state.mode === 8) {
-          active.state.imgUrl = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
-          loadImage(active.state.imgUrl);
-        }
       }
     }
     scheduleFlicker();
@@ -2171,9 +1849,9 @@ function loadTrack(index) {
 }
 
 function resetTempo() {
-  bpmSmooth = 0; bpmInstant = 0; tempoNorm = 0;
+  bpmSmooth = 0; tempoNorm = 0;
   beatIntervals = []; eventTimes = []; eventDensity = 0;
-  tempoLocked = false; beatStreak = 0;
+  tempoLocked = false;
 }
 
 function nextTrack() {
@@ -2182,17 +1860,14 @@ function nextTrack() {
   if (prevTrack === currentTrack && CONFIG.PLAYLIST.length === 1) audio.currentTime = 0;
   clearAllTitleTimers();
   if (isPlaying && !isPaused) {
-    audio.play().catch(err => {
-      console.warn('next track play failed:', err);
-      setTimeout(() => audio.play().catch(() => {}), 1000);
-    });
+    audio.play().catch(() => {});
     showTitleIntro();
   } else {
     setTitleText(currentTrack);
   }
 }
 
-audio.addEventListener('error', (e) => {
+audio.addEventListener('error', () => {
   const err = audio.error;
   if (!err) return;
   console.warn('❌ Ошибка аудио:', err.code, err.message);
@@ -2203,30 +1878,17 @@ audio.addEventListener('error', (e) => {
   }
 });
 
+audio.addEventListener('play', () => {
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+});
+audio.addEventListener('pause', () => {
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = isPaused ? 'paused' : 'playing';
+});
+
 /* ============================================================
    ФОНОВОЕ ВОСПРОИЗВЕДЕНИЕ
    ============================================================ */
-// Ключевой момент: НЕ останавливаем аудио при уходе со страницы.
-// Браузер сам продолжит играть (аудиоэлемент не привязан к видимости).
-// Media Session API позволяет управлять с lock-screen.
-
-// Отключаем прежнюю паузу на visibilitychange
-// (в старой версии был обработчик, который ставил на паузу — убран)
-
-// При возврате — только если БЫЛО поставлено на паузу системно, ничего не делаем
-// Это позволяет музыке играть в фоне
-
-// Обновление позиции медиасессии при смене трека
-audio.addEventListener('play', () => {
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.playbackState = 'playing';
-  }
-});
-audio.addEventListener('pause', () => {
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.playbackState = isPaused ? 'paused' : 'playing';
-  }
-});
+// НЕ паузим при visibilitychange — музыка играет в фоне
 
 /* ============================================================
    ПОКАЗ/СКРЫТИЕ UI
@@ -2234,17 +1896,13 @@ audio.addEventListener('pause', () => {
 function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
   statusEl.classList.add('visible');
   if (statusHideTimer) clearTimeout(statusHideTimer);
-  statusHideTimer = setTimeout(() => {
-    statusEl.classList.remove('visible');
-  }, ms);
+  statusHideTimer = setTimeout(() => { statusEl.classList.remove('visible'); }, ms);
 }
 
 function showProgressTemporarily(ms = 2500) {
   progressWrap.classList.add('visible');
   if (progressHideTimer) clearTimeout(progressHideTimer);
-  progressHideTimer = setTimeout(() => {
-    progressWrap.classList.remove('visible');
-  }, ms);
+  progressHideTimer = setTimeout(() => { progressWrap.classList.remove('visible'); }, ms);
 }
 
 /* ============================================================
@@ -2269,27 +1927,16 @@ function startPlayback() {
   if (!audio.src) loadTrack(0);
   setTitleText(currentTrack);
 
-  const playPromise = audio.play();
-  if (playPromise) {
-    playPromise
-      .then(() => console.log('▶ Воспроизведение началось'))
-      .catch(err => {
-        console.warn('⚠ play() failed:', err);
-        if (currentTrack !== 1 && CONFIG.PLAYLIST.length > 1) {
-          loadTrack(1);
-          audio.play().catch(() => {});
-        }
-      });
-  }
+  audio.play().catch(err => {
+    console.warn('⚠ play() failed:', err);
+    if (currentTrack !== 1 && CONFIG.PLAYLIST.length > 1) {
+      loadTrack(1);
+      audio.play().catch(() => {});
+    }
+  });
 
-  // Запускаем видео-слои (если есть)
-  if (videoLayers.length > 0) {
-    playVideoLayer(0);
-  }
-
-  switchRandomLayer();
+  showNextChaosFrame();
   startChaos();
-  layers.forEach(l => l.draw(l.state, performance.now()));
   showTitleIntro();
 }
 
@@ -2306,11 +1953,10 @@ function togglePause() {
     titleOverlay.classList.remove('intro', 'glitch', 'beat');
     titleOverlay.style.transform = 'translate(-50%, -50%)';
     titleOverlay.classList.add('visible');
-    // Ставим видео на паузу
-    if (currentVideoEl) currentVideoEl.pause();
+    if (activeVideoEl) activeVideoEl.pause();
   } else {
     audio.play().catch(() => {});
-    if (currentVideoEl) currentVideoEl.play().catch(() => {});
+    if (activeVideoEl) activeVideoEl.play().catch(() => {});
     pauseOverlay.classList.remove('visible');
     showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
     showProgressTemporarily(2500);
@@ -2341,8 +1987,7 @@ stage.addEventListener('click', () => {
   }
   lastTapTime = now;
   tapTimer = setTimeout(() => {
-    switchRandomLayer();
-    if (Math.random() < 0.5) setTimeout(() => switchRandomLayer(), 50);
+    showNextChaosFrame();
     tapTimer = null;
   }, 300);
 });
@@ -2360,9 +2005,10 @@ stage.addEventListener('touchend', (e) => {
   const dy = e.changedTouches[0].clientY - touchStartY;
   const dt = Date.now() - touchStartTime;
   if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 600) {
-    activePaletteIndex = (activePaletteIndex + 1) % CONFIG.PALETTES.length;
-    const active = layers.find(l => l.canvas.style.opacity === '1');
-    if (active) active.state.palette = CONFIG.PALETTES[activePaletteIndex];
+    // Свайп — новый случайный фильтр на текущий активный слой
+    const activeImg = imgLayers.find(l => l.canvas.style.opacity === '1');
+    if (activeImg) applyRandomFilter(activeImg.canvas);
+    if (activeVideoEl) applyRandomFilter(activeVideoEl);
     stage.style.filter = 'brightness(1.5)';
     setTimeout(() => stage.style.filter = '', 100);
   }
@@ -2427,25 +2073,20 @@ function refreshAudioListUI() {
   const list = document.getElementById('audioList');
   list.innerHTML = '';
   if (!CONFIG.PLAYLIST.length) {
-    list.innerHTML = '<div id="emptyHint">Пусто — добавь треки</div>';
+    list.innerHTML = '<div id="emptyHint">Пусто</div>';
     return;
   }
   CONFIG.PLAYLIST.forEach((t, i) => {
     const item = document.createElement('div');
     item.className = 'media-item';
-    item.innerHTML = `
-      <span class="name">${i + 1}. ${t.title || t.shortTitle || t.src}</span>
-      <button class="remove" data-idx="${i}" title="Удалить">×</button>
-    `;
+    item.innerHTML = `<span class="name">${i + 1}. ${t.title || t.shortTitle || t.src}</span>
+      <button class="remove" data-idx="${i}">×</button>`;
     list.appendChild(item);
   });
   list.querySelectorAll('.remove').forEach(btn => {
     btn.addEventListener('click', () => {
-      const idx = +btn.dataset.idx;
-      CONFIG.PLAYLIST.splice(idx, 1);
-      if (!CONFIG.PLAYLIST.length) {
-        CONFIG.PLAYLIST.push({ src: '', title: 'Empty' });
-      }
+      CONFIG.PLAYLIST.splice(+btn.dataset.idx, 1);
+      if (!CONFIG.PLAYLIST.length) CONFIG.PLAYLIST.push({ src: '', title: 'Empty' });
       if (currentTrack >= CONFIG.PLAYLIST.length) currentTrack = 0;
       refreshAudioListUI();
       setTitleText(currentTrack);
@@ -2457,18 +2098,15 @@ function refreshVideoListUI() {
   const list = document.getElementById('videoList');
   list.innerHTML = '';
   if (!videoLayers.length) {
-    list.innerHTML = '<div id="emptyHint">Видео-слоёв нет</div>';
+    list.innerHTML = '<div id="emptyHint">Видео не добавлено (работают только картинки)</div>';
     return;
   }
   videoLayers.forEach((vl, i) => {
     const ready = vl.el.readyState >= 2;
-    const status = ready ? '✅' : '⏳';
     const item = document.createElement('div');
     item.className = 'media-item';
-    item.innerHTML = `
-      <span class="name">${status} ${i + 1}. ${vl.url}</span>
-      <button class="remove" data-idx="${i}" title="Удалить">×</button>
-    `;
+    item.innerHTML = `<span class="name">${ready ? '✅' : '⏳'} ${i + 1}. ${vl.url}</span>
+      <button class="remove" data-idx="${i}">×</button>`;
     list.appendChild(item);
   });
   list.querySelectorAll('.remove').forEach(btn => {
@@ -2485,68 +2123,101 @@ function refreshVideoListUI() {
   });
 }
 
-// Добавление аудио
+function refreshImageListUI() {
+  const list = document.getElementById('imageList');
+  list.innerHTML = '';
+  if (!CONFIG.IMAGE_URLS.length) {
+    list.innerHTML = '<div id="emptyHint">Пусто — добавь картинки</div>';
+    return;
+  }
+  CONFIG.IMAGE_URLS.forEach((url, i) => {
+    const item = document.createElement('div');
+    item.className = 'media-item';
+    item.innerHTML = `<span class="name">${i + 1}. ${url}</span>
+      <button class="remove" data-idx="${i}">×</button>`;
+    list.appendChild(item);
+  });
+  list.querySelectorAll('.remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      CONFIG.IMAGE_URLS.splice(+btn.dataset.idx, 1);
+      refreshImageListUI();
+    });
+  });
+}
+
+// Добавить аудио
 document.getElementById('addAudioBtn').addEventListener('click', () => {
   const url = document.getElementById('audioUrlInput').value.trim();
   const title = document.getElementById('audioTitleInput').value.trim();
   const short = document.getElementById('audioShortInput').value.trim();
   const artist = document.getElementById('artistInput').value.trim();
-
-  if (!url) {
-    alert('Вставь ссылку на аудиофайл');
-    return;
-  }
-
+  if (!url) { alert('Вставь ссылку на аудио'); return; }
   CONFIG.PLAYLIST.push({
     src: url,
     title: title || url,
     shortTitle: short || title || 'NEW TRACK',
     artist: artist || '',
   });
-
-  document.getElementById('audioUrlInput').value = '';
-  document.getElementById('audioTitleInput').value = '';
-  document.getElementById('audioShortInput').value = '';
-  document.getElementById('artistInput').value = '';
-
+  ['audioUrlInput', 'audioTitleInput', 'audioShortInput', 'artistInput'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
   refreshAudioListUI();
   alert('✅ Трек добавлен');
 });
 
-// Добавление видео
+// Добавить видео
 document.getElementById('addVideoBtn').addEventListener('click', () => {
   const raw = document.getElementById('videoUrlsInput').value.trim();
-  if (!raw) {
-    alert('Вставь ссылки на видео (каждую с новой строки)');
-    return;
-  }
-
+  if (!raw) { alert('Вставь ссылки на видео'); return; }
   const urls = raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
   urls.forEach(url => {
     if (!CONFIG.VIDEOS.includes(url)) {
       CONFIG.VIDEOS.push(url);
-      const vl = createVideoLayer(url, videoLayers.length);
-      videoLayers.push(vl);
+      videoLayers.push(createVideoLayer(url, videoLayers.length));
     }
   });
-
   document.getElementById('videoUrlsInput').value = '';
   refreshVideoListUI();
   alert(`✅ Добавлено ${urls.length} видео`);
 });
 
-// Перезапуск видео
-document.getElementById('reloadVideosBtn').addEventListener('click', () => {
-  hideVideoLayers();
-  initVideoLayers();
-  refreshVideoListUI();
-  if (isPlaying && !isPaused && videoLayers.length) {
-    playVideoLayer(0);
-  }
-  alert('🔄 Видео-слои перезапущены');
+// Добавить картинки
+document.getElementById('addImageBtn').addEventListener('click', () => {
+  const raw = document.getElementById('imageUrlsInput').value.trim();
+  if (!raw) { alert('Вставь ссылки на картинки'); return; }
+  const urls = raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  urls.forEach(url => {
+    if (!CONFIG.IMAGE_URLS.includes(url)) {
+      CONFIG.IMAGE_URLS.push(url);
+      loadImage(url);
+    }
+  });
+  document.getElementById('imageUrlsInput').value = '';
+  refreshImageListUI();
+  alert(`✅ Добавлено ${urls.length} картинок`);
 });
 
-// Сохранение/очистка пресета
+// Сброс картинок к стандартным
+document.getElementById('resetImagesBtn').addEventListener('click', () => {
+  if (!confirm('Сбросить список картинок к стандартным (Picsum)?')) return;
+  CONFIG.IMAGE_URLS = [
+    'https://picsum.photos/seed/chaos1/1920/1080',
+    'https://picsum.photos/seed/chaos2/1920/1080',
+    'https://picsum.photos/seed/chaos3/1920/1080',
+    'https://picsum.photos/seed/chaos4/1920/1080',
+    'https://picsum.photos/seed/chaos5/1920/1080',
+    'https://picsum.photos/seed/chaos6/1920/1080',
+    'https://picsum.photos/seed/chaos7/1920/1080',
+    'https://picsum.photos/seed/chaos8/1920/1080',
+    'https://picsum.photos/seed/chaos9/1920/1080',
+    'https://picsum.photos/seed/chaos10/1920/1080',
+    'https://picsum.photos/seed/chaos11/1920/1080',
+    'https://picsum.photos/seed/chaos12/1920/1080',
+  ];
+  refreshImageListUI();
+  alert('🔄 Восстановлено');
+});
+
 document.getElementById('savePresetBtn').addEventListener('click', savePreset);
 document.getElementById('clearPresetBtn').addEventListener('click', () => {
   if (confirm('Удалить сохранённый пресет?')) {
@@ -2558,56 +2229,42 @@ document.getElementById('clearPresetBtn').addEventListener('click', () => {
 /* ============================================================
    ИНИЦИАЛИЗАЦИЯ
    ============================================================ */
-async function initLayers() {
-  for (let i = 0; i < CONFIG.LAYER_COUNT; i++) {
-    layers.push(createLayer(i));
-  }
-  await preloadImages();
-  layers.forEach(l => l.draw(l.state, performance.now()));
-}
-
 async function init() {
-  await initLayers();
+  // Создаём canvas-слои для картинок
+  for (let i = 0; i < 4; i++) {
+    imgLayers.push(createImageLayer());
+  }
+
+  await preloadImages();
   initVideoLayers();
   loadTrack(0);
   setTitleText(0);
   refreshAudioListUI();
   refreshVideoListUI();
+  refreshImageListUI();
+  console.log('✅ Готово. Слоёв для картинок:', imgLayers.length, '| видео:', videoLayers.length);
 }
 
 init();
 
 window.addEventListener('resize', () => {
   resizeSpectrum();
-  updateLayersResolution();
+  updateImageLayersResolution();
 });
 
-// Обработчик видимости — БОЛЬШЕ НЕ СТАВИТ НА ПАУЗУ
-// Музыка продолжает играть в фоне
 document.addEventListener('visibilitychange', () => {
-  // При возврате на страницу — восстанавливаем Media Session
   if (!document.hidden) {
     updateMediaSession();
-    if (isPlaying && !isPaused && audio.paused) {
-      audio.play().catch(() => {});
-    }
-    if (isPlaying && !isPaused && currentVideoEl && currentVideoEl.paused) {
-      currentVideoEl.play().catch(() => {});
-    }
+    if (isPlaying && !isPaused && audio.paused) audio.play().catch(() => {});
+    if (isPlaying && !isPaused && activeVideoEl && activeVideoEl.paused) activeVideoEl.play().catch(() => {});
   }
 });
 
-// Разблокировка AudioContext по первому клику
 document.addEventListener('click', function once() {
   initAnalyser();
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   document.removeEventListener('click', once);
 }, { once: true });
-
-// Предотвращаем выгрузку страницы при уходе в фон
-window.addEventListener('pagehide', (e) => {
-  // НЕ останавливаем — пусть браузер продолжает фоновое воспроизведение
-});
 
 </script>
 </body>
