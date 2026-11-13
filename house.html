@@ -43,7 +43,6 @@
     66%      { background-position: 50% 100%, 50% 100%, 0% 50%, 0 0; }
   }
 
-  /* ====== Слой картинки (canvas) ====== */
   .img-layer {
     position: absolute;
     top: 0; left: 0;
@@ -55,7 +54,6 @@
     display: block;
   }
 
-  /* ====== Слой видео ====== */
   .video-file-layer {
     position: absolute;
     top: 0; left: 0;
@@ -68,7 +66,6 @@
     background: transparent;
   }
 
-  /* ====== BASS SHOCKWAVE ====== */
   #bassShockwave {
     position: fixed;
     top: 50%; left: 50%;
@@ -101,7 +98,6 @@
     transition: opacity 0.1s ease-out;
   }
 
-  /* ====== SPECTRUM ====== */
   #spectrumWrap {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -120,7 +116,6 @@
     display: block;
   }
 
-  /* ====== TITLE ====== */
   #titleOverlay {
     position: fixed;
     top: 50%; left: 50%;
@@ -228,7 +223,6 @@
     100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
   }
 
-  /* ====== UI ====== */
   #playBtn {
     position: fixed;
     top: 50%; left: 50%;
@@ -446,167 +440,6 @@
     transition: opacity 0.08s ease-out;
   }
 
-  /* ====== SETTINGS PANEL ====== */
-  #settingsBtn {
-    position: fixed;
-    top: 16px; right: 16px;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255,255,255,0.5);
-    background: rgba(0,0,0,0.5);
-    color: #fff;
-    cursor: pointer;
-    z-index: 1900;
-    display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(6px);
-    transition: all 0.2s ease;
-    font-size: 20px;
-  }
-  #settingsBtn:hover {
-    background: rgba(255,255,255,0.25);
-    border-color: #fff;
-    transform: scale(1.08) rotate(45deg);
-  }
-
-  #settingsPanel {
-    position: fixed;
-    top: 0; right: 0;
-    width: 420px;
-    max-width: 96vw;
-    height: 100%;
-    background: rgba(10, 5, 25, 0.95);
-    backdrop-filter: blur(20px);
-    border-left: 1px solid rgba(0,255,255,0.3);
-    z-index: 1901;
-    padding: 24px 20px;
-    overflow-y: auto;
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
-    color: #fff;
-    font-family: system-ui, sans-serif;
-  }
-  #settingsPanel.open { transform: translateX(0); }
-
-  #settingsPanel h2 {
-    font-size: 14px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #0ff;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(0,255,255,0.3);
-  }
-  #settingsPanel h3 {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.7);
-    margin-top: 20px;
-    margin-bottom: 10px;
-  }
-  #settingsPanel label {
-    display: block;
-    font-size: 11px;
-    color: rgba(255,255,255,0.6);
-    margin-bottom: 6px;
-    margin-top: 12px;
-  }
-  #settingsPanel input[type="text"],
-  #settingsPanel input[type="url"],
-  #settingsPanel textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(0,255,255,0.3);
-    background: rgba(0,0,0,0.5);
-    color: #fff;
-    font-size: 12px;
-    font-family: system-ui, sans-serif;
-    outline: none;
-    transition: border 0.2s;
-  }
-  #settingsPanel input:focus,
-  #settingsPanel textarea:focus {
-    border-color: #0ff;
-    box-shadow: 0 0 12px rgba(0,255,255,0.4);
-  }
-  #settingsPanel textarea {
-    resize: vertical;
-    min-height: 80px;
-    font-family: monospace;
-  }
-  #settingsPanel button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    border-radius: 8px;
-    border: none;
-    background: linear-gradient(90deg, #0ff, #f0f);
-    color: #000;
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  #settingsPanel button:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 20px rgba(0,255,255,0.5);
-  }
-  #settingsPanel button.secondary {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.3);
-  }
-  #settingsPanel button.secondary:hover {
-    background: rgba(255,255,255,0.2);
-  }
-
-  #videoList, #audioList, #imageList { margin-top: 10px; }
-
-  .media-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    border-radius: 6px;
-    background: rgba(0,255,255,0.08);
-    border: 1px solid rgba(0,255,255,0.2);
-    font-size: 11px;
-    color: rgba(255,255,255,0.85);
-    word-break: break-all;
-  }
-  .media-item .name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .media-item .remove {
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255,0,80,0.6);
-    color: #fff;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .media-item .remove:hover {
-    background: rgba(255,0,80,1);
-  }
-
-  #emptyHint {
-    font-size: 11px;
-    color: rgba(255,255,255,0.35);
-    font-style: italic;
-    padding: 8px 0;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     #playBtn { animation: none; }
     #brightBase { animation: none; }
@@ -662,49 +495,11 @@
   <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
 </div>
 
-<button id="settingsBtn" title="Настройки" aria-label="Settings">⚙</button>
-
-<div id="settingsPanel">
-  <h2>Настройки</h2>
-
-  <h3>🎵 Аудио-треки</h3>
-  <label>Ссылка на аудиофайл (.mp3, .ogg, .wav)</label>
-  <input type="url" id="audioUrlInput" placeholder="https://example.com/track.mp3">
-  <label>Название трека / исполнитель</label>
-  <input type="text" id="audioTitleInput" placeholder="Artist — Title">
-  <label>Короткое название для оверлея</label>
-  <input type="text" id="audioShortInput" placeholder="TITLE">
-  <label>Исполнитель</label>
-  <input type="text" id="artistInput" placeholder="ARTIST">
-  <button id="addAudioBtn">➕ Добавить аудио</button>
-  <div id="audioList"></div>
-
-  <h3>🎬 Видео-слои</h3>
-  <label>Ссылки на видео (.mp4, .webm) — каждая с новой строки</label>
-  <textarea id="videoUrlsInput" placeholder="https://example.com/clip1.mp4
-https://example.com/clip2.webm"></textarea>
-  <button id="addVideoBtn">➕ Добавить видео</button>
-  <div id="videoList"></div>
-
-  <h3>🖼 Картинки</h3>
-  <label>Ссылки на картинки — каждая с новой строки</label>
-  <textarea id="imageUrlsInput" placeholder="https://example.com/photo1.jpg
-https://example.com/photo2.jpg"></textarea>
-  <button id="addImageBtn">➕ Добавить картинки</button>
-  <button id="resetImagesBtn" class="secondary">🔄 Сбросить к стандартным</button>
-  <div id="imageList"></div>
-
-  <h3>💾 Пресеты</h3>
-  <button id="savePresetBtn" class="secondary">Сохранить плейлист в localStorage</button>
-  <button id="clearPresetBtn" class="secondary">Очистить сохранённое</button>
-  <button id="closeSettingsBtn" class="secondary">Закрыть</button>
-</div>
-
 <audio id="audio" preload="auto" crossorigin="anonymous"></audio>
 
 <script>
 /* ============================================================
-   КОНФИГУРАЦИЯ
+   КОНФИГУРАЦИЯ — ЕДИНСТВЕННОЕ МЕСТО ДЛЯ НАСТРОЙКИ
    ============================================================ */
 const CONFIG = {
   MAX_FPS: 60,
@@ -726,7 +521,6 @@ const CONFIG = {
 
   BPM_MIN: 60,
   BPM_MAX: 160,
-  // Интервал смены кадра (мс), привязан к темпу
   FLICKER_SLOW: [400, 900],
   FLICKER_FAST: [40, 100],
 
@@ -748,27 +542,19 @@ const CONFIG = {
 
   DOUBLE_SWITCH_CHANCE: 0.35,
 
-  // === МЕДИА ===
-  // Сколько видео-слоёв одновременно держим (как фоновых)
-  VIDEO_LAYERS_COUNT: 4,
+  // Сколько canvas-слоёв одновременно (нужно для плавной смены кадров)
+  IMG_LAYERS_COUNT: 3,
+
   // Длительность одного видео-фрагмента (мс) до переключения
   VIDEO_CLIP_DURATION: [4000, 12000],
 
-  // Ограничения трансформаций — не даём слою стать меньше экрана
   MIN_SCALE: 1.0,
   MAX_SCALE: 1.5,
 
-  // Шанс, что при смене кадра выберется видео (иначе — картинка)
+  // Шанс, что при смене кадра выберется видео (если они есть)
   VIDEO_PICK_CHANCE: 0.5,
 
   // === ЦВЕТОВЫЕ ФИЛЬТРЫ ===
-  // Каждый фильтр — набор CSS-параметров filter
-  // hue: диапазон сдвига оттенка (deg)
-  // sat: множитель насыщенности
-  // con: множитель контраста
-  // bri: множитель яркости
-  // sepia, grayscale, invert: 0..1
-  // blur: px
   FILTERS: [
     { name: 'natural',    hue: [0, 0],        sat: [1.0, 1.2],  con: [1.0, 1.15], bri: [1.0, 1.1] },
     { name: 'cyberpunk',  hue: [240, 320],    sat: [1.6, 2.4],  con: [1.2, 1.6],  bri: [0.9, 1.1] },
@@ -784,21 +570,6 @@ const CONFIG = {
     { name: 'toxic',      hue: [80, 160],     sat: [2.0, 3.0],  con: [1.3, 1.7],  bri: [0.95, 1.1] },
     { name: 'ghost',      hue: [200, 260],    sat: [0.5, 1.0],  con: [1.2, 1.5],  bri: [1.1, 1.3] },
     { name: 'blurred',    hue: [0, 360],      sat: [1.2, 1.8],  con: [1.0, 1.3],  bri: [1.0, 1.1],  blur: [1, 3] },
-  ],
-
-  PALETTES: [
-    ['#ff004c', '#001eff', '#00fff0'],
-    ['#f9f871', '#ff6f91', '#845ec2'],
-    ['#00c9a7', '#4d8076', '#fbea99'],
-    ['#fc5c7d', '#6a82fb', '#fffb7d'],
-    ['#f83600', '#f9d423', '#00b4db'],
-    ['#1f4037', '#99f2c8', '#ff512f'],
-    ['#0f2027', '#203a43', '#2c5364'],
-    ['#f12711', '#f5af19', '#12c2e9'],
-    ['#e96443', '#904e95', '#00f2fe'],
-    ['#fa709a', '#fee140', '#30cfd0'],
-    ['#00ff87', '#60efff', '#ff00c8'],
-    ['#fceabb', '#f8b500', '#00b09b'],
   ],
 
    PLAYLIST: [
@@ -841,46 +612,7 @@ const CONFIG = {
     'https://i.pinimg.com/236x/23/57/b4/2357b43bf34f5a891c8a0c1149d94e5a.jpg',
     'https://i.pinimg.com/236x/59/82/9d/59829d19939e00796fbf3a5119eecfdd.jpg',
   ],
-
-  STORAGE_KEY: 'chaos_player_media_v1',
 };
-
-/* ============================================================
-   ПРЕСЕТ
-   ============================================================ */
-function loadPreset() {
-  try {
-    const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    if (Array.isArray(data.playlist) && data.playlist.length) CONFIG.PLAYLIST = data.playlist;
-    if (Array.isArray(data.videos)) CONFIG.VIDEOS = data.videos;
-    if (Array.isArray(data.images) && data.images.length) CONFIG.IMAGE_URLS = data.images;
-    console.log('📥 Пресет загружен:', {
-      playlist: CONFIG.PLAYLIST.length,
-      videos: CONFIG.VIDEOS.length,
-      images: CONFIG.IMAGE_URLS.length,
-    });
-  } catch (e) {
-    console.warn('Не удалось загрузить пресет:', e);
-  }
-}
-
-function savePreset() {
-  try {
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
-      playlist: CONFIG.PLAYLIST,
-      videos: CONFIG.VIDEOS,
-      images: CONFIG.IMAGE_URLS,
-    }));
-    alert('✅ Пресет сохранён');
-  } catch (e) {
-    console.warn('Не удалось сохранить пресет:', e);
-    alert('❌ Не удалось сохранить');
-  }
-}
-
-loadPreset();
 
 /* ============================================================
    DOM
@@ -911,14 +643,19 @@ const bassChroma = document.getElementById('bassChroma');
 /* ============================================================
    СОСТОЯНИЕ
    ============================================================ */
-let imgLayers = [];       // canvas-слои для картинок
-let videoLayers = [];     // video-слои
+let imgLayers = [];
+let videoLayers = [];
 let isPlaying = false;
 let isPaused = false;
 let currentTrack = 0;
 let flickerTimer = null;
 let animationFrame = null;
 let lastFrameTime = 0;
+
+// Чтобы каждая картинка из IMAGE_URLS точно попала в ротацию —
+// используем очередь с перемешиванием, чтобы все появлялись
+let imageQueue = [];
+let lastImageUrl = null;
 
 let audioCtx = null;
 let analyser = null;
@@ -1230,11 +967,10 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
-   ЦВЕТОВЫЕ ФИЛЬТРЫ — выбор и применение
+   ЦВЕТОВЫЕ ФИЛЬТРЫ
    ============================================================ */
 function pickRandomFilter() {
-  const f = CONFIG.FILTERS[Math.floor(Math.random() * CONFIG.FILTERS.length)];
-  return f;
+  return CONFIG.FILTERS[Math.floor(Math.random() * CONFIG.FILTERS.length)];
 }
 
 function randomInRange(range) {
@@ -1242,10 +978,6 @@ function randomInRange(range) {
   return range[0] + Math.random() * (range[1] - range[0]);
 }
 
-/**
- * Применяет случайный цветовой фильтр из списка
- * к CSS-фильтру DOM-элемента.
- */
 function applyRandomFilter(el, filterOverride) {
   const f = filterOverride || pickRandomFilter();
 
@@ -1271,7 +1003,36 @@ function applyRandomFilter(el, filterOverride) {
 }
 
 /* ============================================================
-   СОЗДАНИЕ CANVAS-СЛОЁВ ПОД КАРТИНКИ
+   ОЧЕРЕДЬ КАРТИНОК — гарантирует, что КАЖДАЯ из IMAGE_URLS
+   появится в ротации, прежде чем какая-то повторится
+   ============================================================ */
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function refillImageQueue() {
+  imageQueue = shuffleArray(CONFIG.IMAGE_URLS);
+  // Если последняя картинка из прошлой очереди совпадает с первой
+  // в новой — поменяем местами, чтобы не было повтора подряд
+  if (imageQueue.length > 1 && imageQueue[0] === lastImageUrl) {
+    [imageQueue[0], imageQueue[1]] = [imageQueue[1], imageQueue[0]];
+  }
+}
+
+function getNextImageUrl() {
+  if (!imageQueue.length) refillImageQueue();
+  const url = imageQueue.shift();
+  lastImageUrl = url;
+  return url;
+}
+
+/* ============================================================
+   СОЗДАНИЕ CANVAS-СЛОЁВ ДЛЯ КАРТИНОК
    ============================================================ */
 function createImageLayer() {
   const canvas = document.createElement('canvas');
@@ -1281,12 +1042,7 @@ function createImageLayer() {
   canvas.height = Math.floor(window.innerHeight * dpr);
   const ctx = canvas.getContext('2d', { alpha: false });
   stage.appendChild(canvas);
-  return {
-    type: 'img',
-    canvas,
-    ctx,
-    currentImg: null,
-  };
+  return { canvas, ctx, currentImgUrl: null };
 }
 
 function updateImageLayersResolution() {
@@ -1301,10 +1057,6 @@ function updateImageLayersResolution() {
   });
 }
 
-/**
- * Рисует картинку на canvas-слое с запасом (cover).
- * Никогда не оставляет чёрных полос.
- */
 function drawImageToLayer(layer, img, transformOverride) {
   if (!img) return;
   const W = layer.canvas.width;
@@ -1315,7 +1067,6 @@ function drawImageToLayer(layer, img, transformOverride) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
-  // cover-логика с запасом ×1.06 (компенсация поворотов/сдвигов)
   const imgW = img.width;
   const imgH = img.height;
   const scaleCover = Math.max(W / imgW, H / imgH) * 1.06;
@@ -1335,7 +1086,6 @@ function drawImageToLayer(layer, img, transformOverride) {
   ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
 
   ctx.restore();
-  layer.currentImg = img;
 }
 
 /* ============================================================
@@ -1356,7 +1106,6 @@ function createVideoLayer(url, index) {
   video.addEventListener('error', () => {
     console.warn('❌ Видео не загрузилось:', url, video.error?.code, video.error?.message);
   });
-
   video.addEventListener('loadeddata', () => {
     console.log('🎬 Видео готово:', url);
   });
@@ -1368,7 +1117,10 @@ function createVideoLayer(url, index) {
 function initVideoLayers() {
   videoLayers.forEach(v => v.el.remove());
   videoLayers = [];
-  if (!CONFIG.VIDEOS.length) return;
+  if (!CONFIG.VIDEOS.length) {
+    console.log('ℹ️ Видео не задано — работают только картинки');
+    return;
+  }
   CONFIG.VIDEOS.forEach((url, i) => {
     videoLayers.push(createVideoLayer(url, i));
   });
@@ -1389,19 +1141,35 @@ function loadImage(url) {
   });
 }
 
-async function preloadImages() {
-  const toLoad = CONFIG.IMAGE_URLS.slice(0, 8);
-  await Promise.all(toLoad.map(loadImage));
-  console.log(`📸 Загружено ${imageCache.size} картинок`);
+/**
+ * Предзагружает ВСЕ картинки из IMAGE_URLS.
+ * Это гарантирует, что каждая картинка будет доступна
+ * при первом показе (без задержки).
+ */
+async function preloadAllImages() {
+  console.log(`📸 Предзагрузка ${CONFIG.IMAGE_URLS.length} картинок...`);
+  const results = await Promise.all(CONFIG.IMAGE_URLS.map(loadImage));
+  const loaded = results.filter(Boolean).length;
+  console.log(`📸 Загружено ${loaded} / ${CONFIG.IMAGE_URLS.length} картинок`);
 }
 
 /* ============================================================
-   ГЛАВНОЕ: показ случайного медиа с фильтром
+   ТРАНСФОРМАЦИИ
    ============================================================ */
+function getRandomTransform() {
+  const tempo = tempoNorm;
+  const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
+  const rot = (Math.random() - 0.5) * (2 + tempo * 12);
+  const maxShift = (scale - 1) * 50;
+  const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 30, maxShift);
+  const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 30, maxShift);
+  const mirror = Math.random() < 0.2 ? -1 : 1;
+  return { scale: scale * mirror, rawScale: scale, rot, tx, ty };
+}
 
-/**
- * Скрыть все слои (картинки + видео).
- */
+/* ============================================================
+   ПОКАЗ СЛУЧАЙНОГО МЕДИА
+   ============================================================ */
 function hideAllLayers() {
   imgLayers.forEach(l => { l.canvas.style.opacity = '0'; });
   videoLayers.forEach(v => {
@@ -1412,9 +1180,6 @@ function hideAllLayers() {
   if (videoSwitchTimer) { clearTimeout(videoSwitchTimer); videoSwitchTimer = null; }
 }
 
-/**
- * Показать картинку (случайную) на выбранном canvas-слое.
- */
 async function showRandomImage() {
   // Скрываем видео
   videoLayers.forEach(v => {
@@ -1424,14 +1189,17 @@ async function showRandomImage() {
   activeVideoEl = null;
   if (videoSwitchTimer) { clearTimeout(videoSwitchTimer); videoSwitchTimer = null; }
 
-  // Берём случайный слой
+  // Берём случайный canvas-слой
   const layer = imgLayers[Math.floor(Math.random() * imgLayers.length)];
-  const url = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
+
+  // Берём следующую картинку из очереди (гарантирует, что все картинки
+  // из IMAGE_URLS появятся в ротации)
+  const url = getNextImageUrl();
   const img = await loadImage(url);
 
   if (!img) {
-    // Пробуем другую
-    const alt = CONFIG.IMAGE_URLS[Math.floor(Math.random() * CONFIG.IMAGE_URLS.length)];
+    // Битая картинка — пробуем следующую
+    const alt = getNextImageUrl();
     const altImg = await loadImage(alt);
     if (!altImg) return;
     drawImageToLayer(layer, altImg, getRandomTransform());
@@ -1441,7 +1209,7 @@ async function showRandomImage() {
     layer.currentImgUrl = url;
   }
 
-  // Применяем случайный цветовой фильтр
+  // Случайный цветовой фильтр
   const filter = applyRandomFilter(layer.canvas);
 
   // Скрываем другие canvas-слои
@@ -1449,34 +1217,23 @@ async function showRandomImage() {
     if (l !== layer) l.canvas.style.opacity = '0';
   });
 
-  // Показываем нужный
   layer.canvas.style.opacity = '1';
   layer.canvas.style.zIndex = '1';
-
-  // Лёгкий зум-панч на бит применится позже через CSS transform
-  // (сам рисунок на canvas не меняется, меняется DOM transform)
   layer.canvas.style.transform = 'scale(1)';
 
-  console.log('🖼 Картинка:', url.split('/').pop(), '| фильтр:', filter.name);
-  return { type: 'image', url, filter: filter.name };
+  console.log('🖼 Картинка:', url.split('/').pop().split('?')[0], '| фильтр:', filter.name);
 }
 
-/**
- * Показать случайное видео с фильтром.
- */
 function showRandomVideo() {
-  if (!videoLayers.length) return null;
+  if (!videoLayers.length) return;
 
-  // Скрываем canvas-слои
   imgLayers.forEach(l => { l.canvas.style.opacity = '0'; });
 
-  // Скрываем все видео
   videoLayers.forEach(v => {
     v.el.style.opacity = '0';
     if (!v.el.paused) v.el.pause();
   });
 
-  // Выбираем случайное видео
   const layer = videoLayers[Math.floor(Math.random() * videoLayers.length)];
   const video = layer.el;
 
@@ -1489,19 +1246,16 @@ function showRandomVideo() {
   video.muted = true;
   video.play().catch(() => {});
 
-  // Случайные трансформации
   const t = getRandomTransform();
   video.style.transform =
     `scale(${t.scale}) rotate(${t.rot}deg) translate(${t.tx}%, ${t.ty}%)`;
   video.style.opacity = '1';
   video.style.zIndex = '1';
 
-  // Случайный цветовой фильтр
   const filter = applyRandomFilter(video);
 
   activeVideoEl = video;
 
-  // Авто-переключение через случайное время
   if (videoSwitchTimer) clearTimeout(videoSwitchTimer);
   const [minD, maxD] = CONFIG.VIDEO_CLIP_DURATION;
   const dur = minD + Math.random() * (maxD - minD);
@@ -1510,40 +1264,16 @@ function showRandomVideo() {
   }, dur);
 
   console.log('🎬 Видео:', layer.url.split('/').pop(), '| фильтр:', filter.name);
-  return { type: 'video', url: layer.url, filter: filter.name };
 }
 
 /**
- * Случайные трансформации для слоя.
- */
-function getRandomTransform() {
-  const tempo = tempoNorm;
-  const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
-  const rot = (Math.random() - 0.5) * (2 + tempo * 12);
-  const maxShift = (scale - 1) * 50;
-  const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 30, maxShift);
-  const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 30, maxShift);
-  const mirror = Math.random() < 0.2 ? -1 : 1;
-  return {
-    scale: scale * mirror,
-    rawScale: scale,
-    rot, tx, ty,
-  };
-}
-
-/**
- * ГЛАВНАЯ ФУНКЦИЯ: показывает следующий случайный кадр
- * (видео или картинку с случайным фильтром).
+ * ГЛАВНАЯ: показывает следующий случайный кадр (видео или картинка).
  */
 function showNextChaosFrame() {
-  // Решаем: видео или картинка
   const hasVideos = videoLayers.length > 0;
   const useVideo = hasVideos && Math.random() < CONFIG.VIDEO_PICK_CHANCE;
 
-  // Хаос-вспышка с шансом
   if (Math.random() < 0.08 * (0.5 + tempoNorm)) triggerChaosFlash();
-
-  // Название мигает с шансом
   if (isPlaying && !isPaused && Math.random() < CONFIG.TITLE_FLASH_ON_SWITCH) {
     flashTitleOnce();
   }
@@ -1765,10 +1495,8 @@ function animate(now) {
     updateAudioEnergy(now);
     drawSpectrum();
 
-    // Пульсация активного видео на бит
     if (activeVideoEl && !CONFIG.REDUCED_MOTION) {
       const pulse = 1 + beatPulse * 0.05 + bassEnergy * 0.03;
-      // не даём scale уйти ниже 1
       const cur = activeVideoEl.style.transform.match(/scale\(([\d.-]+)/);
       if (cur) {
         const baseScale = Math.abs(parseFloat(cur[1]));
@@ -1780,7 +1508,6 @@ function animate(now) {
       }
     }
 
-    // Пульсация активной картинки на бит
     if (!CONFIG.REDUCED_MOTION) {
       imgLayers.forEach(l => {
         if (l.canvas.style.opacity === '1' && Math.random() < 0.05) {
@@ -1884,11 +1611,6 @@ audio.addEventListener('play', () => {
 audio.addEventListener('pause', () => {
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = isPaused ? 'paused' : 'playing';
 });
-
-/* ============================================================
-   ФОНОВОЕ ВОСПРОИЗВЕДЕНИЕ
-   ============================================================ */
-// НЕ паузим при visibilitychange — музыка играет в фоне
 
 /* ============================================================
    ПОКАЗ/СКРЫТИЕ UI
@@ -2005,7 +1727,6 @@ stage.addEventListener('touchend', (e) => {
   const dy = e.changedTouches[0].clientY - touchStartY;
   const dt = Date.now() - touchStartTime;
   if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 600) {
-    // Свайп — новый случайный фильтр на текущий активный слой
     const activeImg = imgLayers.find(l => l.canvas.style.opacity === '1');
     if (activeImg) applyRandomFilter(activeImg.canvas);
     if (activeVideoEl) applyRandomFilter(activeVideoEl);
@@ -2060,189 +1781,27 @@ progressBar.addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   ПАНЕЛЬ НАСТРОЕК
-   ============================================================ */
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsPanel = document.getElementById('settingsPanel');
-const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-
-settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('open'));
-closeSettingsBtn.addEventListener('click', () => settingsPanel.classList.remove('open'));
-
-function refreshAudioListUI() {
-  const list = document.getElementById('audioList');
-  list.innerHTML = '';
-  if (!CONFIG.PLAYLIST.length) {
-    list.innerHTML = '<div id="emptyHint">Пусто</div>';
-    return;
-  }
-  CONFIG.PLAYLIST.forEach((t, i) => {
-    const item = document.createElement('div');
-    item.className = 'media-item';
-    item.innerHTML = `<span class="name">${i + 1}. ${t.title || t.shortTitle || t.src}</span>
-      <button class="remove" data-idx="${i}">×</button>`;
-    list.appendChild(item);
-  });
-  list.querySelectorAll('.remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      CONFIG.PLAYLIST.splice(+btn.dataset.idx, 1);
-      if (!CONFIG.PLAYLIST.length) CONFIG.PLAYLIST.push({ src: '', title: 'Empty' });
-      if (currentTrack >= CONFIG.PLAYLIST.length) currentTrack = 0;
-      refreshAudioListUI();
-      setTitleText(currentTrack);
-    });
-  });
-}
-
-function refreshVideoListUI() {
-  const list = document.getElementById('videoList');
-  list.innerHTML = '';
-  if (!videoLayers.length) {
-    list.innerHTML = '<div id="emptyHint">Видео не добавлено (работают только картинки)</div>';
-    return;
-  }
-  videoLayers.forEach((vl, i) => {
-    const ready = vl.el.readyState >= 2;
-    const item = document.createElement('div');
-    item.className = 'media-item';
-    item.innerHTML = `<span class="name">${ready ? '✅' : '⏳'} ${i + 1}. ${vl.url}</span>
-      <button class="remove" data-idx="${i}">×</button>`;
-    list.appendChild(item);
-  });
-  list.querySelectorAll('.remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = +btn.dataset.idx;
-      const vl = videoLayers[idx];
-      if (vl) {
-        vl.el.remove();
-        videoLayers.splice(idx, 1);
-        CONFIG.VIDEOS = CONFIG.VIDEOS.filter(u => u !== vl.url);
-      }
-      refreshVideoListUI();
-    });
-  });
-}
-
-function refreshImageListUI() {
-  const list = document.getElementById('imageList');
-  list.innerHTML = '';
-  if (!CONFIG.IMAGE_URLS.length) {
-    list.innerHTML = '<div id="emptyHint">Пусто — добавь картинки</div>';
-    return;
-  }
-  CONFIG.IMAGE_URLS.forEach((url, i) => {
-    const item = document.createElement('div');
-    item.className = 'media-item';
-    item.innerHTML = `<span class="name">${i + 1}. ${url}</span>
-      <button class="remove" data-idx="${i}">×</button>`;
-    list.appendChild(item);
-  });
-  list.querySelectorAll('.remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      CONFIG.IMAGE_URLS.splice(+btn.dataset.idx, 1);
-      refreshImageListUI();
-    });
-  });
-}
-
-// Добавить аудио
-document.getElementById('addAudioBtn').addEventListener('click', () => {
-  const url = document.getElementById('audioUrlInput').value.trim();
-  const title = document.getElementById('audioTitleInput').value.trim();
-  const short = document.getElementById('audioShortInput').value.trim();
-  const artist = document.getElementById('artistInput').value.trim();
-  if (!url) { alert('Вставь ссылку на аудио'); return; }
-  CONFIG.PLAYLIST.push({
-    src: url,
-    title: title || url,
-    shortTitle: short || title || 'NEW TRACK',
-    artist: artist || '',
-  });
-  ['audioUrlInput', 'audioTitleInput', 'audioShortInput', 'artistInput'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  refreshAudioListUI();
-  alert('✅ Трек добавлен');
-});
-
-// Добавить видео
-document.getElementById('addVideoBtn').addEventListener('click', () => {
-  const raw = document.getElementById('videoUrlsInput').value.trim();
-  if (!raw) { alert('Вставь ссылки на видео'); return; }
-  const urls = raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-  urls.forEach(url => {
-    if (!CONFIG.VIDEOS.includes(url)) {
-      CONFIG.VIDEOS.push(url);
-      videoLayers.push(createVideoLayer(url, videoLayers.length));
-    }
-  });
-  document.getElementById('videoUrlsInput').value = '';
-  refreshVideoListUI();
-  alert(`✅ Добавлено ${urls.length} видео`);
-});
-
-// Добавить картинки
-document.getElementById('addImageBtn').addEventListener('click', () => {
-  const raw = document.getElementById('imageUrlsInput').value.trim();
-  if (!raw) { alert('Вставь ссылки на картинки'); return; }
-  const urls = raw.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-  urls.forEach(url => {
-    if (!CONFIG.IMAGE_URLS.includes(url)) {
-      CONFIG.IMAGE_URLS.push(url);
-      loadImage(url);
-    }
-  });
-  document.getElementById('imageUrlsInput').value = '';
-  refreshImageListUI();
-  alert(`✅ Добавлено ${urls.length} картинок`);
-});
-
-// Сброс картинок к стандартным
-document.getElementById('resetImagesBtn').addEventListener('click', () => {
-  if (!confirm('Сбросить список картинок к стандартным (Picsum)?')) return;
-  CONFIG.IMAGE_URLS = [
-    'https://picsum.photos/seed/chaos1/1920/1080',
-    'https://picsum.photos/seed/chaos2/1920/1080',
-    'https://picsum.photos/seed/chaos3/1920/1080',
-    'https://picsum.photos/seed/chaos4/1920/1080',
-    'https://picsum.photos/seed/chaos5/1920/1080',
-    'https://picsum.photos/seed/chaos6/1920/1080',
-    'https://picsum.photos/seed/chaos7/1920/1080',
-    'https://picsum.photos/seed/chaos8/1920/1080',
-    'https://picsum.photos/seed/chaos9/1920/1080',
-    'https://picsum.photos/seed/chaos10/1920/1080',
-    'https://picsum.photos/seed/chaos11/1920/1080',
-    'https://picsum.photos/seed/chaos12/1920/1080',
-  ];
-  refreshImageListUI();
-  alert('🔄 Восстановлено');
-});
-
-document.getElementById('savePresetBtn').addEventListener('click', savePreset);
-document.getElementById('clearPresetBtn').addEventListener('click', () => {
-  if (confirm('Удалить сохранённый пресет?')) {
-    localStorage.removeItem(CONFIG.STORAGE_KEY);
-    alert('Очищено');
-  }
-});
-
-/* ============================================================
    ИНИЦИАЛИЗАЦИЯ
    ============================================================ */
 async function init() {
   // Создаём canvas-слои для картинок
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < CONFIG.IMG_LAYERS_COUNT; i++) {
     imgLayers.push(createImageLayer());
   }
 
-  await preloadImages();
+  // Предзагружаем ВСЕ картинки из IMAGE_URLS
+  await preloadAllImages();
+
+  // Заполняем очередь картинок (все из IMAGE_URLS)
+  refillImageQueue();
+
   initVideoLayers();
   loadTrack(0);
   setTitleText(0);
-  refreshAudioListUI();
-  refreshVideoListUI();
-  refreshImageListUI();
-  console.log('✅ Готово. Слоёв для картинок:', imgLayers.length, '| видео:', videoLayers.length);
+
+  console.log('✅ Готово');
+  console.log('📸 Картинок в ротации:', CONFIG.IMAGE_URLS.length);
+  console.log('🎬 Видео в ротации:', videoLayers.length);
 }
 
 init();
