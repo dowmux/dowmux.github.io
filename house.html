@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chaotic Video Player — Bright Chaos + Title</title>
+<title>Chaotic Video Player — Title Chaos</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -77,7 +77,7 @@
     display: block;
   }
 
-  /* ====== TITLE — название исполнителя / трека ====== */
+  /* ====== TITLE — хаотичный оверлей ====== */
   #titleOverlay {
     position: fixed;
     top: 50%; left: 50%;
@@ -86,16 +86,17 @@
     pointer-events: none;
     text-align: center;
     opacity: 0;
-    transition: opacity 0.5s ease, transform 0.5s ease;
     max-width: 90vw;
     padding: 24px 40px;
+    will-change: transform, opacity;
+    transition: opacity 0.15s ease;
   }
 
   #titleOverlay.visible {
     opacity: 1;
   }
 
-  /* Основной текст — крупно, с обводкой и свечением */
+  /* Глитч на бит */
   #titleText {
     font-family: 'Arial Black', 'Impact', system-ui, sans-serif;
     font-size: clamp(32px, 6vw, 96px);
@@ -108,16 +109,13 @@
       0 0 10px rgba(255,255,255,0.6),
       0 0 30px rgba(0,255,255,0.7),
       0 0 60px rgba(255,0,200,0.5),
-      2px 2px 0 #000,
-      -2px -2px 0 #000,
-      2px -2px 0 #000,
-      -2px 2px 0 #000;
+      2px 2px 0 #000, -2px -2px 0 #000,
+      2px -2px 0 #000, -2px 2px 0 #000;
     position: relative;
     will-change: transform, text-shadow;
     transition: transform 0.1s ease;
   }
 
-  /* Глитч-копии: два слоя с тем же текстом, цветные, разъезжаются */
   #titleText::before,
   #titleText::after {
     content: attr(data-text);
@@ -129,18 +127,9 @@
     opacity: 0;
     text-shadow: none;
   }
+  #titleText::before { color: #0ff; transform: translate(-2px, -2px); }
+  #titleText::after  { color: #f0f; transform: translate(2px, 2px); }
 
-  #titleText::before {
-    color: #0ff;
-    transform: translate(-2px, -2px);
-  }
-
-  #titleText::after {
-    color: #f0f;
-    transform: translate(2px, 2px);
-  }
-
-  /* При глитче копии проявляются и разъезжаются сильнее */
   #titleOverlay.glitch #titleText::before {
     opacity: 0.85;
     animation: glitchShiftA 0.12s steps(2) infinite;
@@ -149,7 +138,6 @@
     opacity: 0.85;
     animation: glitchShiftB 0.12s steps(2) infinite;
   }
-
   @keyframes glitchShiftA {
     0%   { transform: translate(-3px, 1px); }
     50%  { transform: translate(2px, -2px); }
@@ -161,32 +149,16 @@
     100% { transform: translate(1px, -2px); }
   }
 
-  /* На бит — короткая "вспышка" увеличения + усиление свечения */
   #titleOverlay.beat #titleText {
     transform: scale(1.06);
     text-shadow:
       0 0 20px rgba(255,255,255,0.9),
       0 0 50px rgba(0,255,255,1),
       0 0 90px rgba(255,0,200,0.8),
-      2px 2px 0 #000,
-      -2px -2px 0 #000,
-      2px -2px 0 #000,
-      -2px 2px 0 #000;
+      2px 2px 0 #000, -2px -2px 0 #000,
+      2px -2px 0 #000, -2px 2px 0 #000;
   }
 
-  /* Подпись "now playing" — мелкий текст сверху или снизу */
-  #titleSub {
-    margin-top: 16px;
-    font-family: system-ui, sans-serif;
-    font-size: clamp(10px, 1.4vw, 14px);
-    letter-spacing: 0.6em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.65);
-    text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,255,0.4);
-    opacity: 0.85;
-  }
-
-  /* Горизонтальная линия-разделитель под названием */
   #titleLine {
     margin: 12px auto 0;
     width: 60%;
@@ -200,33 +172,28 @@
     box-shadow: 0 0 15px rgba(0,255,255,0.6);
   }
 
-  /* Показ названия при старте трека — торжественнее */
+  #titleSub {
+    margin-top: 16px;
+    font-family: system-ui, sans-serif;
+    font-size: clamp(10px, 1.4vw, 14px);
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+    text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,255,0.4);
+    opacity: 0.85;
+  }
+
   #titleOverlay.intro {
     animation: titleIntro 2.5s ease-out;
   }
-
   @keyframes titleIntro {
-    0% {
-      transform: translate(-50%, -50%) scale(0.7);
-      filter: blur(8px);
-      opacity: 0;
-    }
-    15% {
-      transform: translate(-50%, -50%) scale(1.02);
-      filter: blur(0);
-      opacity: 1;
-    }
-    80% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(1.05);
-    }
+    0%   { transform: translate(-50%, -50%) scale(0.7); filter: blur(8px); opacity: 0; }
+    15%  { transform: translate(-50%, -50%) scale(1.02); filter: blur(0); opacity: 1; }
+    80%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
   }
 
-  /* ====== Кнопки/UI ====== */
+  /* ====== UI ====== */
   #playBtn {
     position: fixed;
     top: 50%; left: 50%;
@@ -398,10 +365,7 @@
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  #pauseOverlay.visible {
-    display: flex;
-    opacity: 1;
-  }
+  #pauseOverlay.visible { display: flex; opacity: 1; }
   #pauseOverlay svg {
     width: 80px; height: 80px;
     fill: rgba(255,255,255,0.9);
@@ -448,14 +412,11 @@
 <body>
 
 <div id="brightBase"></div>
-
 <div id="stage"></div>
-
 <div id="beatFlash"></div>
 <div id="chaosFlash"></div>
 <div id="glowVeil"></div>
 
-<!-- Название исполнителя / трека -->
 <div id="titleOverlay">
   <div id="titleText" data-text="">&nbsp;</div>
   <div id="titleLine"></div>
@@ -471,9 +432,7 @@
 </button>
 
 <div id="status">▶</div>
-
 <div id="hint">тап — новый кадр · свайп — палитра · двойной тап — пауза</div>
-
 <div id="audioWarn"></div>
 
 <div id="progressWrap">
@@ -514,15 +473,29 @@ const CONFIG = {
 
   STATUS_HIDE_DELAY: 2500,
 
-  // === TITLE ===
-  // Через сколько мс после старта трека прятать название
-  TITLE_SHOW_DURATION: 4500,
-  // Через сколько мс показывать название повторно
-  TITLE_REPEAT_INTERVAL: 32000,
-  // Показывать ли глитч-вспышку названия на каждый бит
+  // === TITLE — хаотичное мелькание ===
+  // Шанс того, что название мигнёт при переключении слоя
+  TITLE_FLASH_ON_SWITCH: 0.35,
+  // Длительность одного "мига" названия (мс)
+  TITLE_FLASH_DURATION: [80, 260],
+  // Шанс глитча при каждом миге
+  TITLE_GLITCH_ON_FLASH: 0.6,
+  // Длительность глитча (мс)
+  TITLE_GLITCH_DURATION: [60, 160],
+  // Шанс "двойного мига" (миг, пауза, миг)
+  TITLE_DOUBLE_FLASH_CHANCE: 0.25,
+  // Шанс случайного смещения текста при миге (в %)
+  TITLE_OFFSET_CHANCE: 0.4,
+  TITLE_OFFSET_RANGE: 8,
+  // Шанс случайного поворота при миге (в deg)
+  TITLE_ROTATE_CHANCE: 0.25,
+  TITLE_ROTATE_RANGE: 6,
+  // Шанс случайного масштаба при миге
+  TITLE_SCALE_CHANCE: 0.3,
+  TITLE_SCALE_RANGE: [0.85, 1.15],
+  // Глитч на бит (дополнительно к хаотичному мельканию)
   TITLE_GLITCH_ON_BEAT: true,
-  // Минимальный интервал между глитч-вспышками (мс)
-  TITLE_GLITCH_MIN_INTERVAL: 300,
+  TITLE_GLITCH_MIN_INTERVAL: 280,
 
   DOUBLE_SWITCH_CHANCE: 0.35,
   PALETTE_JUMP_CHANCE: 0.15,
@@ -548,9 +521,9 @@ const CONFIG = {
     ['#fceabb', '#f8b500', '#00b09b'],
   ],
 
-  // ⚠ ЗАМЕНИ title на реальные названия исполнителей/треков
+  // ⚠ Замени на реальные исполнителей и треки
   PLAYLIST: [
-    {
+     {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
       title: 'Group Therapy',
       shortTitle: 'Above and Beyond',
@@ -650,12 +623,10 @@ let nextFlickerDelay = 500;
 let statusHideTimer = null;
 let progressHideTimer = null;
 
-// === TITLE ===
-let titleHideTimer = null;
-let titleRepeatTimer = null;
-let titleGlitchTimer = null;
+// === TITLE (хаотичный) ===
+let titleFlashTimers = [];       // активные таймеры мигов
 let lastTitleGlitchTime = 0;
-let titleBeatActive = false;
+let titleBeatTimeout = null;
 
 /* ============================================================
    WEBAUDIO ANALYSER
@@ -755,9 +726,7 @@ function updateAudioEnergy(now) {
           }
           bpmInstant = instantBpm;
 
-          if (beatIntervals.length >= 4) {
-            tempoLocked = true;
-          }
+          if (beatIntervals.length >= 4) tempoLocked = true;
         }
       } else {
         beatIntervals.push(now);
@@ -768,7 +737,7 @@ function updateAudioEnergy(now) {
         setTimeout(() => { beatFlash.style.opacity = '0'; }, 80);
       }
 
-      // === НАЗВАНИЕ РЕАГИРУЕТ НА БИТ ===
+      // Глитч на бит (дополнительно к хаотичному миганию)
       if (CONFIG.TITLE_GLITCH_ON_BEAT && titleOverlay.classList.contains('visible')) {
         const timeSinceGlitch = now - lastTitleGlitchTime;
         if (timeSinceGlitch > CONFIG.TITLE_GLITCH_MIN_INTERVAL) {
@@ -776,11 +745,10 @@ function updateAudioEnergy(now) {
           triggerTitleGlitch(80 + Math.random() * 100);
         }
       }
-      // Пульс масштаба на бит
       if (titleOverlay.classList.contains('visible')) {
         titleOverlay.classList.add('beat');
-        clearTimeout(titleBeatActive);
-        titleBeatActive = setTimeout(() => {
+        clearTimeout(titleBeatTimeout);
+        titleBeatTimeout = setTimeout(() => {
           titleOverlay.classList.remove('beat');
         }, 120);
       }
@@ -821,11 +789,8 @@ function updateAudioEnergy(now) {
       }
       let v = count > 0 ? sum / count / 255 : 0;
 
-      if (i > bars * 0.6) {
-        v *= 1.6;
-      } else if (i > bars * 0.4) {
-        v *= 1.25;
-      }
+      if (i > bars * 0.6) v *= 1.6;
+      else if (i > bars * 0.4) v *= 1.25;
 
       const prev = spectrumValues[i];
       spectrumValues[i] = v > prev
@@ -860,9 +825,7 @@ function updateAudioEnergy(now) {
   }
 
   const cutoff = now - 1000;
-  while (eventTimes.length && eventTimes[0] < cutoff) {
-    eventTimes.shift();
-  }
+  while (eventTimes.length && eventTimes[0] < cutoff) eventTimes.shift();
   const instantDensity = eventTimes.length;
   eventDensity = eventDensity * 0.9 + instantDensity * 0.1;
 
@@ -885,73 +848,162 @@ function updateAudioEnergy(now) {
 }
 
 /* ============================================================
-   TITLE — показ названия исполнителя / трека
+   TITLE — получение и установка текста (с обновлением при смене трека)
    ============================================================ */
 function getTitleForTrack(index) {
   const t = CONFIG.PLAYLIST[index];
-  if (!t) return 'Now Playing';
-  return t.shortTitle || t.title || 'Now Playing';
+  if (!t) return { title: 'NOW PLAYING', artist: '' };
+  return {
+    title: t.shortTitle || t.title || 'NOW PLAYING',
+    artist: t.artist || '',
+  };
 }
 
-function showTitle(text, options = {}) {
-  const { duration = CONFIG.TITLE_SHOW_DURATION, intro = false } = options;
+/**
+ * Установить текст названия (без показа).
+ * Вызывается при загрузке трека, чтобы при первом миге
+ * название уже было правильным.
+ */
+function setTitleText(index) {
+  const { title, artist } = getTitleForTrack(index);
+  titleText.textContent = title;
+  titleText.dataset.text = title;
+  // Подпись "now playing · artist" снизу
+  const sub = document.getElementById('titleSub');
+  if (sub) {
+    sub.textContent = artist ? `now playing · ${artist}` : 'now playing';
+  }
+}
 
-  // Сброс предыдущих таймеров
-  if (titleHideTimer) { clearTimeout(titleHideTimer); titleHideTimer = null; }
-  if (titleRepeatTimer) { clearTimeout(titleRepeatTimer); titleRepeatTimer = null; }
+/**
+ * Одиночный "миг" названия — хаотичное появление на короткое время.
+ * Применяет случайные смещения/повороты/масштабы для хаоса.
+ */
+function flashTitleOnce() {
+  // Текст всегда актуален (обновляется в loadTrack)
+  // Случайные трансформации
+  const tx = Math.random() < CONFIG.TITLE_OFFSET_CHANCE
+    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_OFFSET_RANGE
+    : 0;
+  const ty = Math.random() < CONFIG.TITLE_OFFSET_CHANCE
+    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_OFFSET_RANGE
+    : 0;
+  const rot = Math.random() < CONFIG.TITLE_ROTATE_CHANCE
+    ? (Math.random() - 0.5) * 2 * CONFIG.TITLE_ROTATE_RANGE
+    : 0;
+  const sc = Math.random() < CONFIG.TITLE_SCALE_CHANCE
+    ? CONFIG.TITLE_SCALE_RANGE[0] + Math.random() * (CONFIG.TITLE_SCALE_RANGE[1] - CONFIG.TITLE_SCALE_RANGE[0])
+    : 1;
 
-  titleText.textContent = text;
-  titleText.dataset.text = text;
+  titleOverlay.style.transition = 'none';
+  titleOverlay.style.transform =
+    `translate(calc(-50% + ${tx}vw), calc(-50% + ${ty}vh)) rotate(${rot}deg) scale(${sc})`;
 
-  titleOverlay.classList.remove('intro', 'glitch', 'beat');
-  if (intro) titleOverlay.classList.add('intro');
+  // Показываем
+  titleOverlay.classList.remove('intro');
   titleOverlay.classList.add('visible');
 
-  // Первая глитч-вспышка через 300мс после появления
-  setTimeout(() => triggerTitleGlitch(150), 300);
-
-  // Прячем название по таймеру (если intro — там своя анимация)
-  if (!intro) {
-    titleHideTimer = setTimeout(() => {
-      titleOverlay.classList.remove('visible');
-    }, duration);
-  } else {
-    // intro уже сама исчезает через CSS-анимацию
-    setTimeout(() => {
-      titleOverlay.classList.remove('intro');
-    }, 2500);
+  // Случайный глитч при миге
+  if (Math.random() < CONFIG.TITLE_GLITCH_ON_FLASH) {
+    const gDur = CONFIG.TITLE_GLITCH_DURATION[0] +
+      Math.random() * (CONFIG.TITLE_GLITCH_DURATION[1] - CONFIG.TITLE_GLITCH_DURATION[0]);
+    triggerTitleGlitch(gDur);
   }
 
-  // Планируем повторный показ
-  scheduleTitleRepeat();
-}
+  // Длительность мига
+  const [minD, maxD] = CONFIG.TITLE_FLASH_DURATION;
+  const dur = minD + Math.random() * (maxD - minD);
 
-function scheduleTitleRepeat() {
-  if (titleRepeatTimer) clearTimeout(titleRepeatTimer);
-  titleRepeatTimer = setTimeout(() => {
-    if (isPlaying && !isPaused) {
-      showTitle(getTitleForTrack(currentTrack), {
-        duration: CONFIG.TITLE_SHOW_DURATION,
-        intro: false,
-      });
+  const hideTimer = setTimeout(() => {
+    titleOverlay.classList.remove('visible');
+    // Возвращаем трансформации в норму (плавно)
+    titleOverlay.style.transition = 'opacity 0.15s ease';
+    titleOverlay.style.transform = 'translate(-50%, -50%)';
+
+    // Шанс двойного мига: скрылось на мгновение — снова показалось
+    if (Math.random() < CONFIG.TITLE_DOUBLE_FLASH_CHANCE) {
+      const gap = 40 + Math.random() * 120;
+      const doubleTimer = setTimeout(() => {
+        if (isPlaying && !isPaused) flashTitleOnce();
+      }, gap);
+      titleFlashTimers.push(doubleTimer);
     }
-  }, CONFIG.TITLE_REPEAT_INTERVAL);
+  }, dur);
+
+  titleFlashTimers.push(hideTimer);
 }
 
+/**
+ * Запуск серии хаотичных мигов.
+ * Вызывается при старте трека и при переключении слоя с шансом.
+ */
+function flashTitleChaos() {
+  if (!isPlaying || isPaused) return;
+  flashTitleOnce();
+}
+
+/**
+ * Полный показ названия при старте трека (торжественное интро).
+ * Показывает текст 2.5 сек, затем начинает хаотичное мелькание.
+ */
+function showTitleIntro() {
+  // Сброс предыдущих таймеров
+  clearAllTitleTimers();
+  titleOverlay.style.transition = 'none';
+  titleOverlay.style.transform = 'translate(-50%, -50%)';
+  titleOverlay.classList.remove('glitch', 'beat');
+  titleOverlay.classList.add('visible', 'intro');
+
+  // Через 2.5 сек начинается хаос
+  const t1 = setTimeout(() => {
+    titleOverlay.classList.remove('intro');
+    // Начинаем хаотичное мелькание: следующий миг через случайный интервал
+    scheduleNextTitleFlash();
+  }, 2500);
+  titleFlashTimers.push(t1);
+}
+
+/**
+ * Планирует следующий миг названия в случайный момент.
+ * Так название мелькает хаотично на протяжении всей песни.
+ */
+function scheduleNextTitleFlash() {
+  if (!isPlaying || isPaused) return;
+
+  // Интервал зависит от темпа: быстрее трек — чаще мелькает
+  const minI = 400;
+  const maxI = 2500;
+  const delay = maxI - (maxI - minI) * tempoNorm + Math.random() * 800;
+
+  const t = setTimeout(() => {
+    if (isPlaying && !isPaused) {
+      flashTitleOnce();
+      scheduleNextTitleFlash();
+    }
+  }, delay);
+  titleFlashTimers.push(t);
+}
+
+function clearAllTitleTimers() {
+  titleFlashTimers.forEach(t => clearTimeout(t));
+  titleFlashTimers = [];
+  if (titleBeatTimeout) { clearTimeout(titleBeatTimeout); titleBeatTimeout = null; }
+  titleOverlay.classList.remove('visible', 'intro', 'glitch', 'beat');
+  titleOverlay.style.transform = 'translate(-50%, -50%)';
+  titleOverlay.style.transition = 'opacity 0.15s ease';
+}
+
+/* ============================================================
+   Глитч (общий для мигов и бита)
+   ============================================================ */
+let glitchTimer = null;
 function triggerTitleGlitch(durationMs = 150) {
   if (CONFIG.REDUCED_MOTION) return;
   titleOverlay.classList.add('glitch');
-  if (titleGlitchTimer) clearTimeout(titleGlitchTimer);
-  titleGlitchTimer = setTimeout(() => {
+  if (glitchTimer) clearTimeout(glitchTimer);
+  glitchTimer = setTimeout(() => {
     titleOverlay.classList.remove('glitch');
   }, durationMs);
-}
-
-function hideTitle() {
-  titleOverlay.classList.remove('visible', 'intro', 'glitch', 'beat');
-  if (titleHideTimer) { clearTimeout(titleHideTimer); titleHideTimer = null; }
-  if (titleRepeatTimer) { clearTimeout(titleRepeatTimer); titleRepeatTimer = null; }
-  if (titleGlitchTimer) { clearTimeout(titleGlitchTimer); titleGlitchTimer = null; }
 }
 
 /* ============================================================
@@ -1162,9 +1214,7 @@ function drawImage(ctx, W, H, state, time, pal) {
   ctx.scale(zoom, zoom);
 
   const hue = (state.hueShift + time * 30 + bassEnergy * 90 + tempoNorm * 120) % 360;
-
-  const dw = W * 1.2;
-  const dh = H * 1.2;
+  const dw = W * 1.2, dh = H * 1.2;
 
   ctx.globalAlpha = 0.9;
   ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
@@ -1499,7 +1549,7 @@ function triggerChaosFlash() {
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — плюс хаотичный миг названия
    ============================================================ */
 function switchRandomLayer() {
   const idx = Math.floor(Math.random() * layers.length);
@@ -1512,6 +1562,11 @@ function switchRandomLayer() {
 
   if (Math.random() < CONFIG.GLITCH_CHANCE * (0.5 + tempo)) {
     triggerChaosFlash();
+  }
+
+  // === Хаотичный миг названия при переключении слоя ===
+  if (isPlaying && !isPaused && Math.random() < CONFIG.TITLE_FLASH_ON_SWITCH) {
+    flashTitleOnce();
   }
 
   layers.forEach((layer, i) => {
@@ -1666,7 +1721,11 @@ function loadTrack(index) {
   currentTrack = ((index % CONFIG.PLAYLIST.length) + CONFIG.PLAYLIST.length) % CONFIG.PLAYLIST.length;
   audio.src = CONFIG.PLAYLIST[currentTrack].src;
   audio.load();
+
+  // === КЛЮЧЕВОЙ МОМЕНТ: обновляем текст названия при смене трека ===
+  setTitleText(currentTrack);
   console.log('🎵 Загрузка трека:', CONFIG.PLAYLIST[currentTrack].title);
+
   resetTempo();
 }
 
@@ -1682,12 +1741,27 @@ function resetTempo() {
 }
 
 function nextTrack() {
+  const prevTrack = currentTrack;
   loadTrack(currentTrack + 1);
+
+  // Если трек не изменился (например, 1 трек в плейлисте) — просто перезапускаем
+  if (prevTrack === currentTrack && CONFIG.PLAYLIST.length === 1) {
+    audio.currentTime = 0;
+  }
+
+  // Сброс всех хаотичных мигов названия
+  clearAllTitleTimers();
+
   if (isPlaying && !isPaused) {
     audio.play().catch(err => {
       console.warn('Не удалось воспроизвести следующий трек:', err);
       setTimeout(() => audio.play().catch(() => {}), 1000);
     });
+    // Показываем интро для нового трека
+    showTitleIntro();
+  } else {
+    // Если на паузе — просто устанавливаем текст без показа
+    setTitleText(currentTrack);
   }
 }
 
@@ -1704,7 +1778,7 @@ audio.addEventListener('error', (e) => {
 });
 
 /* ============================================================
-   ПОКАЗ/СКРЫТИЕ
+   ПОКАЗ/СКРЫТИЕ UI
    ============================================================ */
 function showStatusTemporarily(ms = CONFIG.STATUS_HIDE_DELAY) {
   statusEl.classList.add('visible');
@@ -1744,6 +1818,8 @@ function startPlayback() {
   setTimeout(() => hintEl.classList.remove('visible'), 4000);
 
   if (!audio.src) loadTrack(0);
+  // На всякий случай пересинхронизируем текст названия
+  setTitleText(currentTrack);
 
   const playPromise = audio.play();
   if (playPromise) {
@@ -1764,11 +1840,8 @@ function startPlayback() {
 
   layers.forEach(l => l.draw(l.state, performance.now()));
 
-  // === Показать название трека ===
-  showTitle(getTitleForTrack(currentTrack), {
-    duration: CONFIG.TITLE_SHOW_DURATION,
-    intro: true,
-  });
+  // Торжественный показ названия + запуск хаотичного мелькания
+  showTitleIntro();
 }
 
 function togglePause() {
@@ -1780,15 +1853,21 @@ function togglePause() {
     showStatusTemporarily(99999999);
     progressWrap.classList.add('visible');
     if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
+
     // На паузе показываем название постоянно
-    showTitle(getTitleForTrack(currentTrack), { duration: 99999999 });
+    clearAllTitleTimers();
+    titleOverlay.classList.remove('intro', 'glitch', 'beat');
+    titleOverlay.style.transform = 'translate(-50%, -50%)';
+    titleOverlay.classList.add('visible');
   } else {
     audio.play().catch(() => {});
     pauseOverlay.classList.remove('visible');
     showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
     showProgressTemporarily(2500);
-    // После паузы — снова планируем скрытие
-    hideTitle();
+
+    // Снова хаотичное мелькание
+    clearAllTitleTimers();
+    scheduleNextTitleFlash();
   }
 }
 
@@ -1908,6 +1987,8 @@ async function initLayers() {
 async function init() {
   await initLayers();
   loadTrack(0);
+  // Устанавливаем текст ещё до старта — при первом миге будет правильное название
+  setTitleText(0);
 }
 
 init();
