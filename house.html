@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chaotic Video Player — Bright Chaos</title>
+<title>Chaotic Video Player — Bright Chaos + Title</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -23,9 +23,6 @@
     cursor: pointer;
   }
 
-  /* ====== ПОДСЛОЙ: постоянный яркий градиент ======
-     Гарантирует, что даже если активный слой "дышит"
-     или меняется — за ним всегда цвет, а не чёрное. */
   #brightBase {
     position: fixed; inset: 0;
     z-index: 0;
@@ -61,7 +58,7 @@
     image-rendering: crisp-edges;
   }
 
-  /* ====== SPECTRUM — полоса по низу ====== */
+  /* ====== SPECTRUM ====== */
   #spectrumWrap {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -80,6 +77,156 @@
     display: block;
   }
 
+  /* ====== TITLE — название исполнителя / трека ====== */
+  #titleOverlay {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1400;
+    pointer-events: none;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    max-width: 90vw;
+    padding: 24px 40px;
+  }
+
+  #titleOverlay.visible {
+    opacity: 1;
+  }
+
+  /* Основной текст — крупно, с обводкой и свечением */
+  #titleText {
+    font-family: 'Arial Black', 'Impact', system-ui, sans-serif;
+    font-size: clamp(32px, 6vw, 96px);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.05;
+    color: #fff;
+    text-shadow:
+      0 0 10px rgba(255,255,255,0.6),
+      0 0 30px rgba(0,255,255,0.7),
+      0 0 60px rgba(255,0,200,0.5),
+      2px 2px 0 #000,
+      -2px -2px 0 #000,
+      2px -2px 0 #000,
+      -2px 2px 0 #000;
+    position: relative;
+    will-change: transform, text-shadow;
+    transition: transform 0.1s ease;
+  }
+
+  /* Глитч-копии: два слоя с тем же текстом, цветные, разъезжаются */
+  #titleText::before,
+  #titleText::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    text-shadow: none;
+  }
+
+  #titleText::before {
+    color: #0ff;
+    transform: translate(-2px, -2px);
+  }
+
+  #titleText::after {
+    color: #f0f;
+    transform: translate(2px, 2px);
+  }
+
+  /* При глитче копии проявляются и разъезжаются сильнее */
+  #titleOverlay.glitch #titleText::before {
+    opacity: 0.85;
+    animation: glitchShiftA 0.12s steps(2) infinite;
+  }
+  #titleOverlay.glitch #titleText::after {
+    opacity: 0.85;
+    animation: glitchShiftB 0.12s steps(2) infinite;
+  }
+
+  @keyframes glitchShiftA {
+    0%   { transform: translate(-3px, 1px); }
+    50%  { transform: translate(2px, -2px); }
+    100% { transform: translate(-1px, 2px); }
+  }
+  @keyframes glitchShiftB {
+    0%   { transform: translate(3px, -1px); }
+    50%  { transform: translate(-2px, 2px); }
+    100% { transform: translate(1px, -2px); }
+  }
+
+  /* На бит — короткая "вспышка" увеличения + усиление свечения */
+  #titleOverlay.beat #titleText {
+    transform: scale(1.06);
+    text-shadow:
+      0 0 20px rgba(255,255,255,0.9),
+      0 0 50px rgba(0,255,255,1),
+      0 0 90px rgba(255,0,200,0.8),
+      2px 2px 0 #000,
+      -2px -2px 0 #000,
+      2px -2px 0 #000,
+      -2px 2px 0 #000;
+  }
+
+  /* Подпись "now playing" — мелкий текст сверху или снизу */
+  #titleSub {
+    margin-top: 16px;
+    font-family: system-ui, sans-serif;
+    font-size: clamp(10px, 1.4vw, 14px);
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+    text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,255,0.4);
+    opacity: 0.85;
+  }
+
+  /* Горизонтальная линия-разделитель под названием */
+  #titleLine {
+    margin: 12px auto 0;
+    width: 60%;
+    max-width: 400px;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(0,255,255,0.8),
+      rgba(255,0,200,0.8),
+      transparent);
+    box-shadow: 0 0 15px rgba(0,255,255,0.6);
+  }
+
+  /* Показ названия при старте трека — торжественнее */
+  #titleOverlay.intro {
+    animation: titleIntro 2.5s ease-out;
+  }
+
+  @keyframes titleIntro {
+    0% {
+      transform: translate(-50%, -50%) scale(0.7);
+      filter: blur(8px);
+      opacity: 0;
+    }
+    15% {
+      transform: translate(-50%, -50%) scale(1.02);
+      filter: blur(0);
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+  }
+
+  /* ====== Кнопки/UI ====== */
   #playBtn {
     position: fixed;
     top: 50%; left: 50%;
@@ -172,7 +319,6 @@
   }
   #audioWarn.visible { opacity: 1; }
 
-  /* ====== CROSSBAR — над спектром ====== */
   #progressWrap {
     position: fixed;
     bottom: 180px; left: 0;
@@ -281,7 +427,6 @@
     transition: opacity 0.1s ease-out;
   }
 
-  /* Постоянная лёгкая вуаль свечения — «нет чёрных зон» */
   #glowVeil {
     position: fixed; inset: 0;
     z-index: 770;
@@ -295,6 +440,8 @@
     #brightBase { animation: none; }
     .video-layer { transition: opacity 0.5s ease !important; }
     #beatFlash, #chaosFlash { display: none; }
+    #titleOverlay.glitch #titleText::before,
+    #titleOverlay.glitch #titleText::after { animation: none; }
   }
 </style>
 </head>
@@ -307,6 +454,13 @@
 <div id="beatFlash"></div>
 <div id="chaosFlash"></div>
 <div id="glowVeil"></div>
+
+<!-- Название исполнителя / трека -->
+<div id="titleOverlay">
+  <div id="titleText" data-text="">&nbsp;</div>
+  <div id="titleLine"></div>
+  <div id="titleSub">now playing</div>
+</div>
 
 <div id="spectrumWrap">
   <canvas id="spectrumCanvas"></canvas>
@@ -360,18 +514,23 @@ const CONFIG = {
 
   STATUS_HIDE_DELAY: 2500,
 
-  // === ХАОС (crop убран — чёрные вырезы исключены) ===
+  // === TITLE ===
+  // Через сколько мс после старта трека прятать название
+  TITLE_SHOW_DURATION: 4500,
+  // Через сколько мс показывать название повторно
+  TITLE_REPEAT_INTERVAL: 32000,
+  // Показывать ли глитч-вспышку названия на каждый бит
+  TITLE_GLITCH_ON_BEAT: true,
+  // Минимальный интервал между глитч-вспышками (мс)
+  TITLE_GLITCH_MIN_INTERVAL: 300,
+
   DOUBLE_SWITCH_CHANCE: 0.35,
   PALETTE_JUMP_CHANCE: 0.15,
   GLITCH_CHANCE: 0.08,
   MIRROR_CHANCE: 0.2,
 
-  // Минимальный/максимальный масштаб — не позволяем слою
-  // стать меньше экрана и обнажить фон
   MIN_SCALE: 1.0,
   MAX_SCALE: 1.5,
-
-  // Верхняя граница blur — слишком сильный blur "гасит" яркость
   MAX_BLUR_PX: 4,
 
   PALETTES: [
@@ -389,15 +548,18 @@ const CONFIG = {
     ['#fceabb', '#f8b500', '#00b09b'],
   ],
 
+  // ⚠ ЗАМЕНИ title на реальные названия исполнителей/треков
   PLAYLIST: [
     {
       src: 'https://cs9-10v4.vkuseraudio.net/s/v1/acmp/4z_2ioIaRiLEVDbO6VLZiKq7GT__PN55kXevA1klh9atvVLrcLTgaLr1xS5aFd7oPQkgkQb6Z2t-W4_HhCynCTBxy5rCDdgHL9sPD4RnTRL8hsTw-W3e_TUajzckg-UnBI8iNk_AKMfQ2hp3QKF3cuDDZKGyn6062M0-fhMnNk948qWWjLZK.mp3?siren=1',
-      title: 'VK Track',
+      title: 'Group Therapy',
+      shortTitle: 'Above and Beyond',
     },
-   {
+    {
       src: 'HeldeepRadio.aac',
-      title: 'VK Track',
-    }
+      title: 'Oliver Heldens',
+      shortTitle: 'Heldeep Radio',
+    },
   ],
 
   IMAGE_URLS: [
@@ -440,6 +602,8 @@ const chaosFlash = document.getElementById('chaosFlash');
 const spectrumWrap = document.getElementById('spectrumWrap');
 const spectrumCanvas = document.getElementById('spectrumCanvas');
 const spectrumCtx = spectrumCanvas.getContext('2d');
+const titleOverlay = document.getElementById('titleOverlay');
+const titleText = document.getElementById('titleText');
 
 /* ============================================================
    СОСТОЯНИЕ
@@ -486,8 +650,15 @@ let nextFlickerDelay = 500;
 let statusHideTimer = null;
 let progressHideTimer = null;
 
+// === TITLE ===
+let titleHideTimer = null;
+let titleRepeatTimer = null;
+let titleGlitchTimer = null;
+let lastTitleGlitchTime = 0;
+let titleBeatActive = false;
+
 /* ============================================================
-   WEBAUDIO ANALYSER + TREBLE BOOST
+   WEBAUDIO ANALYSER
    ============================================================ */
 function initAnalyser() {
   if (audioCtx) return;
@@ -596,6 +767,23 @@ function updateAudioEnergy(now) {
         beatFlash.style.opacity = Math.min(0.35, bassDelta * 2.5);
         setTimeout(() => { beatFlash.style.opacity = '0'; }, 80);
       }
+
+      // === НАЗВАНИЕ РЕАГИРУЕТ НА БИТ ===
+      if (CONFIG.TITLE_GLITCH_ON_BEAT && titleOverlay.classList.contains('visible')) {
+        const timeSinceGlitch = now - lastTitleGlitchTime;
+        if (timeSinceGlitch > CONFIG.TITLE_GLITCH_MIN_INTERVAL) {
+          lastTitleGlitchTime = now;
+          triggerTitleGlitch(80 + Math.random() * 100);
+        }
+      }
+      // Пульс масштаба на бит
+      if (titleOverlay.classList.contains('visible')) {
+        titleOverlay.classList.add('beat');
+        clearTimeout(titleBeatActive);
+        titleBeatActive = setTimeout(() => {
+          titleOverlay.classList.remove('beat');
+        }, 120);
+      }
     }
 
     const highDelta = highEnergy - prevHighEnergy;
@@ -694,6 +882,76 @@ function updateAudioEnergy(now) {
   const slowAvg = (CONFIG.FLICKER_SLOW[0] + CONFIG.FLICKER_SLOW[1]) / 2;
   const fastAvg = (CONFIG.FLICKER_FAST[0] + CONFIG.FLICKER_FAST[1]) / 2;
   nextFlickerDelay = slowAvg + (fastAvg - slowAvg) * tempoNorm;
+}
+
+/* ============================================================
+   TITLE — показ названия исполнителя / трека
+   ============================================================ */
+function getTitleForTrack(index) {
+  const t = CONFIG.PLAYLIST[index];
+  if (!t) return 'Now Playing';
+  return t.shortTitle || t.title || 'Now Playing';
+}
+
+function showTitle(text, options = {}) {
+  const { duration = CONFIG.TITLE_SHOW_DURATION, intro = false } = options;
+
+  // Сброс предыдущих таймеров
+  if (titleHideTimer) { clearTimeout(titleHideTimer); titleHideTimer = null; }
+  if (titleRepeatTimer) { clearTimeout(titleRepeatTimer); titleRepeatTimer = null; }
+
+  titleText.textContent = text;
+  titleText.dataset.text = text;
+
+  titleOverlay.classList.remove('intro', 'glitch', 'beat');
+  if (intro) titleOverlay.classList.add('intro');
+  titleOverlay.classList.add('visible');
+
+  // Первая глитч-вспышка через 300мс после появления
+  setTimeout(() => triggerTitleGlitch(150), 300);
+
+  // Прячем название по таймеру (если intro — там своя анимация)
+  if (!intro) {
+    titleHideTimer = setTimeout(() => {
+      titleOverlay.classList.remove('visible');
+    }, duration);
+  } else {
+    // intro уже сама исчезает через CSS-анимацию
+    setTimeout(() => {
+      titleOverlay.classList.remove('intro');
+    }, 2500);
+  }
+
+  // Планируем повторный показ
+  scheduleTitleRepeat();
+}
+
+function scheduleTitleRepeat() {
+  if (titleRepeatTimer) clearTimeout(titleRepeatTimer);
+  titleRepeatTimer = setTimeout(() => {
+    if (isPlaying && !isPaused) {
+      showTitle(getTitleForTrack(currentTrack), {
+        duration: CONFIG.TITLE_SHOW_DURATION,
+        intro: false,
+      });
+    }
+  }, CONFIG.TITLE_REPEAT_INTERVAL);
+}
+
+function triggerTitleGlitch(durationMs = 150) {
+  if (CONFIG.REDUCED_MOTION) return;
+  titleOverlay.classList.add('glitch');
+  if (titleGlitchTimer) clearTimeout(titleGlitchTimer);
+  titleGlitchTimer = setTimeout(() => {
+    titleOverlay.classList.remove('glitch');
+  }, durationMs);
+}
+
+function hideTitle() {
+  titleOverlay.classList.remove('visible', 'intro', 'glitch', 'beat');
+  if (titleHideTimer) { clearTimeout(titleHideTimer); titleHideTimer = null; }
+  if (titleRepeatTimer) { clearTimeout(titleRepeatTimer); titleRepeatTimer = null; }
+  if (titleGlitchTimer) { clearTimeout(titleGlitchTimer); titleGlitchTimer = null; }
 }
 
 /* ============================================================
@@ -865,7 +1123,6 @@ function drawScene(ctx, canvas, state, now) {
     case 8: drawImage(ctx, W, H, state, time, pal); break;
   }
 
-  // Глитч-полосы (screen — только добавляют яркость)
   if (Math.random() < 0.2 + highEnergy * 0.6 + tempoNorm * 0.2) {
     ctx.globalCompositeOperation = 'screen';
     const n = 1 + Math.floor(highEnergy * 6 + tempoNorm * 3);
@@ -881,11 +1138,9 @@ function drawScene(ctx, canvas, state, now) {
   ctx.restore();
 }
 
-/* 8. ИНТЕРНЕТ-КАРТИНКА — всегда на весь экран */
 function drawImage(ctx, W, H, state, time, pal) {
   const img = imageCache.get(state.imgUrl);
   if (!img) {
-    // Fallback: яркий градиент из палитры (без чёрного)
     const g = ctx.createLinearGradient(0, 0, W, H);
     g.addColorStop(0, pal[0]);
     g.addColorStop(0.5, pal[1]);
@@ -895,7 +1150,6 @@ function drawImage(ctx, W, H, state, time, pal) {
     return;
   }
 
-  // Увеличенный zoom — картинка всегда покрывает экран с запасом
   const zoom = 1.15 + beatPulse * 0.15 + bassEnergy * 0.2 + highPulse * 0.08 + tempoNorm * 0.05;
   const rot = (time * (0.05 + tempoNorm * 0.15) + state.seed) % (Math.PI * 2);
   const shakeAmt = (beatPulse + highPulse) * (10 + tempoNorm * 15);
@@ -909,14 +1163,12 @@ function drawImage(ctx, W, H, state, time, pal) {
 
   const hue = (state.hueShift + time * 30 + bassEnergy * 90 + tempoNorm * 120) % 360;
 
-  // Умножаем на 1.2, чтобы при любом зуме/повороте не было пустых краёв
   const dw = W * 1.2;
   const dh = H * 1.2;
 
   ctx.globalAlpha = 0.9;
   ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
 
-  // Яркий цветовой оверлей (screen — не затемняет)
   ctx.globalCompositeOperation = 'screen';
   ctx.globalAlpha = 0.25 + beatPulse * 0.25 + tempoNorm * 0.15;
   ctx.fillStyle = `hsla(${hue}, 100%, 55%, 0.6)`;
@@ -940,7 +1192,6 @@ function drawNoise(ctx, W, H, state, time, pal) {
   const hueBase = state.hueShift + time * 60 + bassEnergy * 180;
   const highBoost = 1 + highEnergy * 0.8;
   for (let i = 0; i < d.length; i += 4) {
-    // Яркий шум: все каналы высокие, без чёрных провалов
     const v = 120 + Math.random() * 135 * highBoost;
     d[i]     = (v + hueBase) % 255;
     d[i + 1] = (v * 0.7 + 100 + midEnergy * 100) % 255;
@@ -965,7 +1216,6 @@ function drawStripes(ctx, W, H, state, time, pal) {
     ctx.fillRect(x + stripeW, 0, stripeW, H);
   }
   ctx.restore();
-  // screen-градиент — только светлее
   ctx.globalCompositeOperation = 'screen';
   const g = ctx.createLinearGradient(0, 0, W, H);
   g.addColorStop(0, `rgba(255,255,255,${0.05 + midEnergy * 0.15})`);
@@ -1001,7 +1251,6 @@ function drawBlocks(ctx, W, H, state, time, pal) {
   const cellW = 80, cellH = 60;
   const cols = Math.ceil(W / cellW), rows = Math.ceil(H / cellH);
   const speedMul = 1 + tempoNorm * 2;
-  // Рисуем ВСЕГДА цветные блоки, независимо от порога — фон не пустует
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const n = Math.sin(x * 0.7 + time * 3 * speedMul + state.seed) *
@@ -1020,11 +1269,9 @@ function drawBlocks(ctx, W, H, state, time, pal) {
   ctx.globalAlpha = 1;
 }
 
-/* 4. ТУННЕЛЬ — без чёрного фона, с ярким градиентом */
 function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
   const cx = W / 2, cy = H / 2;
 
-  // Яркий радиальный фон из палитры вместо чёрного
   const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.6);
   bgGrad.addColorStop(0, pal[1]);
   bgGrad.addColorStop(0.5, pal[0]);
@@ -1059,7 +1306,6 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
     }
   }
 
-  // Лучи
   ctx.save();
   ctx.translate(cx, cy);
   const rays = 16;
@@ -1076,7 +1322,6 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
   }
   ctx.restore();
 
-  // Центральное свечение
   const glow = Math.max(0.25, beat, highPulse);
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 180 * glow);
   grad.addColorStop(0, `hsla(${(hueBase + 180) % 360}, 100%, 80%, ${glow * 0.7})`);
@@ -1085,7 +1330,6 @@ function drawTunnel(ctx, W, H, state, time, pal, bass, beat) {
   ctx.fillRect(0, 0, W, H);
 }
 
-/* 5. VHS — яркий градиент, без чёрных зон */
 function drawVHS(ctx, W, H, state, time, pal) {
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, pal[0]);
@@ -1112,7 +1356,6 @@ function drawVHS(ctx, W, H, state, time, pal) {
   for (let i = 0; i < dots; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H;
-    // Только светлые точки — без чёрного шума
     ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.5})`;
     ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 3);
   }
@@ -1127,7 +1370,6 @@ function drawVHS(ctx, W, H, state, time, pal) {
     } catch (e) { /* ignore */ }
   }
 
-  // Очень лёгкий scanline-эффект (полупрозрачный, не чёрный)
   ctx.fillStyle = 'rgba(0,0,0,0.06)';
   for (let y = 0; y < H; y += 4) {
     ctx.fillRect(0, y, W, 1);
@@ -1154,7 +1396,6 @@ function drawPlasma(ctx, W, H, state, time, pal) {
                 Math.sin(Math.hypot(x - pw / 2, y - ph / 2) * 0.15 - t * 1.5) * amp;
       const idx = (y * pw + x) * 4;
       const hue = ((v + 4) / 8) * 360;
-      // Светлее: lightness 0.6 вместо 0.5 — нет тёмных участков
       const [r, g, b] = hslToRgb(hue / 360, 0.95, 0.6);
       d[idx] = r; d[idx + 1] = g; d[idx + 2] = b; d[idx + 3] = 255;
     }
@@ -1199,7 +1440,6 @@ function drawVoronoi(ctx, W, H, state, time, pal) {
       }
       const col = paletteRgb[nearest % paletteRgb.length];
       const idx = (y * pw + x) * 4;
-      // Рёбра — не чёрные, а светлее (blend к белому)
       const edge = minDist < 0.0008 ? 0.6 : 1;
       d[idx] = col[0] + (255 - col[0]) * (1 - edge);
       d[idx + 1] = col[1] + (255 - col[1]) * (1 - edge);
@@ -1259,7 +1499,7 @@ function triggerChaosFlash() {
 }
 
 /* ============================================================
-   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ — БЕЗ ЧЁРНЫХ ВЫРЕЗОВ
+   ПЕРЕКЛЮЧЕНИЕ СЛОЁВ
    ============================================================ */
 function switchRandomLayer() {
   const idx = Math.floor(Math.random() * layers.length);
@@ -1298,24 +1538,20 @@ function switchRandomLayer() {
         el.style.transform = 'none';
         el.style.filter = 'none';
       } else {
-        // Масштаб ВСЕГДА >= 1 → слой не меньше экрана → нет чёрных краёв
         const scale = CONFIG.MIN_SCALE + Math.random() * (CONFIG.MAX_SCALE - CONFIG.MIN_SCALE);
         const rotate = (Math.random() - 0.5) * (4 + tempo * 22);
         const skewX = (Math.random() - 0.5) * (2 + tempo * 18);
         const skewY = (Math.random() - 0.5) * (2 + tempo * 18);
 
-        // Смещение ограничено так, чтобы при масштабе >= 1
-        // слой всё равно покрывал экран (приблизительно)
         const maxShift = (scale - 1) * 50;
         const tx = (Math.random() - 0.5) * Math.min(5 + tempo * 35, maxShift);
         const ty = (Math.random() - 0.5) * Math.min(5 + tempo * 35, maxShift);
 
         const hue = Math.random() * 360;
-        const sat = 1.0 + Math.random() * 0.8 + tempo * 0.6;   // >= 1 → не блёкнет
-        const con = 1.0 + Math.random() * 0.6 + tempo * 0.5;   // >= 1 → не темнеет
-        const bright = 1.0 + Math.random() * 0.3 + tempo * 0.2; // >= 1 → не темнеет
+        const sat = 1.0 + Math.random() * 0.8 + tempo * 0.6;
+        const con = 1.0 + Math.random() * 0.6 + tempo * 0.5;
+        const bright = 1.0 + Math.random() * 0.3 + tempo * 0.2;
 
-        // Blur ограничен, чтобы не "гасил" картинку
         let blur = '';
         if (Math.random() < 0.08 + tempo * 0.2) {
           blur = `blur(${Math.min(CONFIG.MAX_BLUR_PX, 1 + tempo * 4).toFixed(1)}px)`;
@@ -1323,12 +1559,10 @@ function switchRandomLayer() {
 
         const mirror = Math.random() < CONFIG.MIRROR_CHANCE ? -1 : 1;
 
-        // НИКАКОГО clip-path / crop — всегда на весь экран
         el.style.clipPath = '';
 
         el.style.transform =
           `scale(${scale * mirror}, ${scale}) rotate(${rotate}deg) skew(${skewX}deg, ${skewY}deg) translate(${tx}%, ${ty}%)`;
-        // filter: без invert (он делал тёмные зоны), brightness >= 1
         el.style.filter =
           `hue-rotate(${hue}deg) saturate(${sat}) contrast(${con}) brightness(${bright}) ${blur}`;
       }
@@ -1359,7 +1593,6 @@ function animate(now) {
         layer.draw(layer.state, now);
         if (!CONFIG.REDUCED_MOTION && Math.random() < 0.04) {
           const el = layer.canvas;
-          // Пульсация только увеличивает scale, никогда не уменьшает ниже 1
           const pulseScale = Math.max(CONFIG.MIN_SCALE, 1 + beatPulse * 0.12 + bassEnergy * 0.08);
           el.style.transform = el.style.transform.replace(
             /scale\(([\d.]+)(?:,\s*([\d.]+))?\)/,
@@ -1530,6 +1763,12 @@ function startPlayback() {
   startChaos();
 
   layers.forEach(l => l.draw(l.state, performance.now()));
+
+  // === Показать название трека ===
+  showTitle(getTitleForTrack(currentTrack), {
+    duration: CONFIG.TITLE_SHOW_DURATION,
+    intro: true,
+  });
 }
 
 function togglePause() {
@@ -1541,11 +1780,15 @@ function togglePause() {
     showStatusTemporarily(99999999);
     progressWrap.classList.add('visible');
     if (progressHideTimer) { clearTimeout(progressHideTimer); progressHideTimer = null; }
+    // На паузе показываем название постоянно
+    showTitle(getTitleForTrack(currentTrack), { duration: 99999999 });
   } else {
     audio.play().catch(() => {});
     pauseOverlay.classList.remove('visible');
     showStatusTemporarily(CONFIG.STATUS_HIDE_DELAY);
     showProgressTemporarily(2500);
+    // После паузы — снова планируем скрытие
+    hideTitle();
   }
 }
 
