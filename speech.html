@@ -25,7 +25,6 @@
             overscroll-behavior: none;
         }
 
-        /* Окно субтитров — почти на весь экран */
         #subtitles-window {
             position: fixed;
             left: 0;
@@ -42,12 +41,11 @@
             pointer-events: none;
         }
 
-        /* Обычный режим: вертикальная лента */
         #lines {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            transition: transform 0.35s ease;
+            transition: transform 0.25s ease;
             will-change: transform;
         }
 
@@ -61,17 +59,17 @@
             overflow-wrap: anywhere;
             opacity: 0;
             transform: translateY(16px);
-            animation: lineIn 0.3s ease forwards;
+            animation: lineIn 0.2s ease forwards;
         }
 
         .sub-line:not(:last-child) { color: #b8b8b8; }
         .sub-line:last-child { color: #ffffff; }
+        .sub-line.interim { color: #9aa0a6; font-style: italic; }
 
         @keyframes lineIn {
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Режим бегущей строки */
         #marquee-container {
             display: none;
             width: 100%;
@@ -102,7 +100,6 @@
         body.marquee-mode #lines { display: none; }
         body.marquee-mode #subtitles-window { justify-content: center; }
 
-        /* Панель управления: 4 кнопки в 2 ряда */
         .controls {
             position: fixed;
             left: 0;
@@ -133,8 +130,8 @@
         button:active { opacity: 0.75; transform: scale(0.97); }
 
         #startBtn { background: #007aff; grid-column: 1 / 2; grid-row: 1 / 2; }
-        #stopBtn  { background: #ff3b30; grid-column: 2 / 3; grid-row: 1 / 2; display: none; }
-        #clearBtn { background: #3a3a3c; grid-column: 3 / 4; grid-row: 1 / 2; }
+        #startBtn.listening { background: #ff3b30; }
+        #clearBtn { background: #3a3a3c; grid-column: 2 / 4; grid-row: 1 / 2; }
         #marqueeBtn { background: #5856d6; grid-column: 1 / 4; grid-row: 2 / 3; }
         #marqueeBtn.active { background: #34c759; }
 
@@ -189,7 +186,6 @@
 
     <div class="controls">
         <button id="startBtn">Начать</button>
-        <button id="stopBtn">Остановить</button>
         <button id="clearBtn">Очистить</button>
         <button id="marqueeBtn">Бегущая строка: выкл</button>
     </div>
@@ -204,22 +200,16 @@
             const marqueeTextEl = document.getElementById('marquee-text');
             const measureEl     = document.getElementById('measure');
             const startBtn      = document.getElementById('startBtn');
-            const stopBtn       = document.getElementById('stopBtn');
             const clearBtn      = document.getElementById('clearBtn');
             const marqueeBtn    = document.getElementById('marqueeBtn');
             const windowEl      = document.getElementById('subtitles-window');
 
             let recognition = null;
             let isListening = false;
-
-            // Состояние
             let marqueeMode = false;
-            let addedWords = [];
-            let addedWordsSet = new Set();
 
-            // Таймер автоочистки
-            let clearTimer = null;
-            const AUTO_CLEAR_MS = 10000; // 10 секунд тишины после конца фразы
+            let finalText = '';
+            let interimText = '';
 
             const MAX_LINES = 8;
 
@@ -230,26 +220,16 @@
                 return;
             }
 
-            // ---------- Таймер автоочистки ----------
-            function scheduleClear() {
-                if (clearTimer) clearTimeout(clearTimer);
-                clearTimer = setTimeout(() => {
-                    clearLines();
-                    statusEl.textContent = '10 секунд тишины — текст очищен';
-                }, AUTO_CLEAR_MS);
-            }
-
-            function cancelClear() {
-                if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; }
-            }
-
-            // ---------- Утилиты ----------
             function getMaxTextWidth() {
                 return windowEl.clientWidth - 32;
             }
 
+            function normalize(word) {
+                return word.toLowerCase().replace(/[.,!?;:—–]/g, '');
+            }
+
             function wrapText(text, maxWidth) {
-                const words = text.split(/\s+/);
+                const words = text.split(/\s+/).filter(Boolean);
                 const lines = [];
                 let current = '';
                 for (const word of words) {
@@ -271,22 +251,18 @@
                 linesEl.style.transform = overflow > 0 ? `translateY(-${overflow}px)` : 'translateY(0)';
             }
 
-            // ---------- Дедупликация ----------
-            function extractNewWords(transcript) {
-                const incoming = transcript
-                    .trim()
-                    .toLowerCase()
-                    .replace(/[.,!?;:—–]/g, '')
-                    .split(/\s+/)
-                    .filter(Boolean);
+            function mergeWithoutDuplicates(finalPart, interimPart) {
+                if (!interimPart) return finalPart;
+                if (!finalPart) return interimPart;
 
-                if (incoming.length === 0) return [];
+                const finalWords = finalPart.trim().split(/\s+/);
+                const interimWords = interimPart.trim().split(/\s+/);
 
-                const tailLen = Math.min(incoming.length, addedWords.length);
+                const maxCheck = Math.min(finalWords.length, interimWords.length);
                 let overlap = 0;
-                for (let len = tailLen; len > 0; len--) {
-                    const tail = addedWords.slice(-len).map(w => w.toLowerCase().replace(/[.,!?;:—–]/g, ''));
-                    const head = incoming.slice(0, len);
+                for (let len = maxCheck; len > 0; len--) {
+                    const tail = finalWords.slice(-len).map(normalize);
+                    const head = interimWords.slice(0, len).map(normalize);
                     let match = true;
                     for (let i = 0; i < len; i++) {
                         if (tail[i] !== head[i]) { match = false; break; }
@@ -294,26 +270,31 @@
                     if (match) { overlap = len; break; }
                 }
 
-                let newWords = incoming.slice(overlap);
-
-                const recentSet = new Set(addedWords.slice(-30).map(w => w.toLowerCase().replace(/[.,!?;:—–]/g, '')));
-                newWords = newWords.filter(w => !recentSet.has(w));
-                return newWords;
+                const newInterim = interimWords.slice(overlap);
+                if (!newInterim.length) return finalPart;
+                return finalPart.trim() + ' ' + newInterim.join(' ');
             }
 
-            // ---------- Рендеры ----------
             function renderLines() {
                 linesEl.innerHTML = '';
-                const allText = addedWords.join(' ');
-                if (!allText) { linesEl.style.transform = 'translateY(0)'; return; }
 
-                const lines = wrapText(allText, getMaxTextWidth());
+                const combined = mergeWithoutDuplicates(finalText, interimText);
+                if (!combined.trim()) { linesEl.style.transform = 'translateY(0)'; return; }
+
+                const lines = wrapText(combined, getMaxTextWidth());
+
                 for (const lineText of lines) {
                     const div = document.createElement('div');
                     div.className = 'sub-line';
                     div.textContent = lineText;
                     linesEl.appendChild(div);
                 }
+
+                if (interimText) {
+                    const last = linesEl.lastElementChild;
+                    if (last) last.classList.add('interim');
+                }
+
                 while (linesEl.children.length > MAX_LINES) {
                     linesEl.removeChild(linesEl.firstChild);
                 }
@@ -321,16 +302,16 @@
             }
 
             function renderMarquee() {
-                const text = addedWords.join(' ');
-                if (!text) {
+                const combined = mergeWithoutDuplicates(finalText, interimText);
+                if (!combined.trim()) {
                     marqueeTextEl.textContent = '';
                     marqueeTextEl.style.animation = 'none';
                     return;
                 }
-                marqueeTextEl.textContent = text;
+                marqueeTextEl.textContent = combined;
 
                 const charsPerSecond = 8;
-                const duration = Math.max(10, text.length / charsPerSecond);
+                const duration = Math.max(10, combined.length / charsPerSecond);
 
                 marqueeTextEl.style.animation = 'none';
                 void marqueeTextEl.offsetWidth;
@@ -342,35 +323,17 @@
                 else renderLines();
             }
 
-            // ---------- Добавление / очистка ----------
-            function appendWords(newWords) {
-                if (!newWords.length) return;
-
-                for (const w of newWords) {
-                    addedWords.push(w);
-                    addedWordsSet.add(w.toLowerCase());
-                }
-                if (addedWords.length > 500) {
-                    addedWords = addedWords.slice(-300);
-                    addedWordsSet = new Set(addedWords.map(w => w.toLowerCase()));
-                }
-
-                renderAll();
-            }
-
-            function clearLines() {
+            function clearAll() {
+                finalText = '';
+                interimText = '';
                 linesEl.innerHTML = '';
                 linesEl.style.transform = 'translateY(0)';
                 marqueeTextEl.textContent = '';
                 marqueeTextEl.style.animation = 'none';
-                addedWords = [];
-                addedWordsSet = new Set();
-                cancelClear();
             }
 
             function toggleMarqueeMode() {
                 marqueeMode = !marqueeMode;
-
                 if (marqueeMode) {
                     document.body.classList.add('marquee-mode');
                     marqueeCont.classList.add('active');
@@ -387,33 +350,32 @@
                 statusEl.textContent = marqueeMode ? 'Режим бегущей строки включён' : 'Обычный режим';
             }
 
-            // ---------- Распознавание ----------
             recognition = new SpeechRecognition();
             recognition.lang = 'ru-RU';
             recognition.continuous = true;
             recognition.interimResults = true;
 
             recognition.onresult = function(event) {
-                let finalText = '';
-                let hasInterim = false;
+                let newFinal = '';
+                let currentInterim = '';
 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        finalText += event.results[i][0].transcript + ' ';
+                        newFinal += transcript + ' ';
                     } else {
-                        hasInterim = true;
+                        currentInterim = transcript;
                     }
                 }
 
-                if (finalText.trim()) {
-                    // Фраза закончена: добавляем новые слова и запускаем таймер тишины
-                    const newWords = extractNewWords(finalText);
-                    appendWords(newWords);
-                    scheduleClear();
-                } else if (hasInterim) {
-                    // Человек ещё говорит — сбрасываем таймер, чтобы не очистить посреди фразы
-                    if (clearTimer) scheduleClear();
+                if (newFinal.trim()) {
+                    finalText = mergeWithoutDuplicates(finalText, newFinal.trim());
+                    interimText = '';
+                } else if (currentInterim) {
+                    interimText = currentInterim;
                 }
+
+                renderAll();
             };
 
             recognition.onerror = function(e) {
@@ -426,36 +388,30 @@
                 if (isListening) { try { recognition.start(); } catch(e) {} }
             };
 
-            // ---------- Кнопки ----------
             startBtn.addEventListener('click', function() {
-                statusEl.textContent = 'Слушаю... Говорите по-русски.';
-                startBtn.style.display = 'none';
-                stopBtn.style.display = 'block';
-                isListening = true;
-                try { recognition.start(); } catch(e) {}
-            });
-
-            stopBtn.addEventListener('click', function() {
-                isListening = false;
-                recognition.stop();
-                cancelClear(); // текст останется, пока не нажмут «Очистить»
-                statusEl.textContent = 'Остановлено — текст остаётся на экране';
-                stopBtn.style.display = 'none';
-                startBtn.style.display = 'block';
+                if (!isListening) {
+                    isListening = true;
+                    startBtn.textContent = 'Остановить';
+                    startBtn.classList.add('listening');
+                    statusEl.textContent = 'Слушаю... Говорите по-русски.';
+                    try { recognition.start(); } catch(e) {}
+                } else {
+                    isListening = false;
+                    recognition.stop();
+                    startBtn.textContent = 'Начать';
+                    startBtn.classList.remove('listening');
+                    statusEl.textContent = 'Остановлено — текст остаётся на экране';
+                }
             });
 
             clearBtn.addEventListener('click', function() {
-                clearLines();
+                clearAll();
                 statusEl.textContent = isListening ? 'Очищено — продолжаю слушать' : 'Очищено';
             });
 
             marqueeBtn.addEventListener('click', toggleMarqueeMode);
 
-            // ---------- Реакция на поворот/изменение размера ----------
-            window.addEventListener('orientationchange', function() {
-                renderAll();
-            });
-
+            window.addEventListener('orientationchange', function() { renderAll(); });
             window.addEventListener('resize', function() {
                 if (!marqueeMode) requestAnimationFrame(scrollToBottom);
             });
