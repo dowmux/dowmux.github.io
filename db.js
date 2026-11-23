@@ -2,15 +2,15 @@ export const albumDatabase = [
     {
         id: "album-1",
         performer: "Above & Beyond",
-        albumName: "Above & Beyond - Group Therapy 702",
+        albumName: "Above & Beyond - Group Therapy 704",
         imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGjoW5q096B5IRX8o33sHrkGTkf5QguVxcDr5bRROpM1D_WHHErmXE4cfY&s=10",
-        musicUrl: "https://cs9-4v4.vkuseraudio.net/s/v1/acmp/kHZqNilP2jcYmho1hccJ6KnMcpe0hmzvd5KjaCfXwN2bpVQ3Uv8f-PIL4m6A4gf8O669246_d-t690wkjOuCHeQOuuXqZb9Ao127tlu_AKP0W7cdzRV2rvCxwunUJBjqs_ThIYRA68CHcdlQqj7IESOh6Xkw-8Ww6XrRPonJqGJN4_sL9MBL.mp3?siren=1",
+        musicUrl: "grouptherapy.aac",
         cueUrl: "grouptherapy.cue" // Путь к вашему локальному или внешнему .cue файлу
     },
     {
         id: "album-2",
         performer: "Oliver Heldens",
-        albumName: "Heldeep Radio #644",
+        albumName: "Heldeep Radio #646",
         imageUrl: "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/17/5b/de/175bdeb3-74a0-836e-6118-4310eef22fe4/mza_1279829827300431381.jpg/400x400bb.webp",
         musicUrl: "HeldeepRadio.aac",
         cueUrl: "HeldeepRadio.cue" // Путь к другому .cue файлу
@@ -42,9 +42,9 @@ export const albumDatabase = [
     {
         id: "album-6",
         performer: "Armin van Buuren – A State Of Trance",
-        albumName: "Armin van Buuren – A State Of Trance 1302",
+        albumName: "Armin van Buuren – A State Of Trance 1304",
         imageUrl: "http://trancecentury.com/wp-content/uploads/2020/09/arminvanbuuren.jpg",
-        musicUrl: "https://psv4.vkuseraudio.net/s/v1/amp2/ZUxOhgoQXxceJgPrkVn3tQ0irLVWtdvg9uaKE2DeZ5eo0-056AMXYwWZNzmdagmsRiofO8AqzhD6Gxma50xjA7BjkorIjfqH0Oy44_GOy4EBXGJKRcouVUGcdmX35d8WAcL6y7Gu-rPU82dhahadLGgSSTX9UdE9xZfprTI.mp3?siren=1",
+        musicUrl: "asot.aac",
         cueUrl: "asot.cue" // Путь к другому .cue файлу
     },
     {
