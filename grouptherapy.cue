@@ -6,106 +6,102 @@ FILE "mix.mp3" MP3
     PERFORMER "Unknown Artist"
     INDEX 01 00:00:00
   TRACK 02 AUDIO
-    TITLE "Maelstrom (Braxton Remix)"
-    PERFORMER "Dhumen"
-    INDEX 01 00:31:00
+    TITLE "The Monkey Vibe"
+    PERFORMER "01. station2station & Blue Mora"
+    INDEX 01 00:30:00
   TRACK 03 AUDIO
-    TITLE "Luna"
-    PERFORMER "Sebastian Weikum"
-    INDEX 01 04:25:00
+    TITLE "Ascent"
+    PERFORMER "02. John Grand & Sendr"
+    INDEX 01 05:13:00
   TRACK 04 AUDIO
-    TITLE "Feel Your Soul"
-    PERFORMER "Nick Warren & M.O.S."
+    TITLE "Elevate"
+    PERFORMER "03. Johan Vilborg"
     INDEX 01 09:17:00
   TRACK 05 AUDIO
-    TITLE "The Monkey Vibe"
-    PERFORMER "station2station & Blue Mora"
-    INDEX 01 14:38:00
+    TITLE "Skybird"
+    PERFORMER "04. Genix"
+    INDEX 01 13:49:00
   TRACK 06 AUDIO
-    TITLE "Never Knew"
-    PERFORMER "Apex"
-    INDEX 01 18:58:00
+    TITLE "Interstellar"
+    PERFORMER "05. Kryder"
+    INDEX 01 18:09:00
   TRACK 07 AUDIO
-    TITLE "Elm (Lost A Shoe in 92 Mix)"
-    PERFORMER "Dusky"
-    INDEX 01 23:52:00
+    TITLE "Steady Breakin (Ilias Katelanos Remix)"
+    PERFORMER "06. ANUQRAM & Sense IS"
+    INDEX 01 22:50:00
   TRACK 08 AUDIO
-    TITLE "Lifegame"
-    PERFORMER "Dosem"
-    INDEX 01 27:44:00
+    TITLE "Falling Back"
+    PERFORMER "07. Darren Tate & Sxcha"
+    INDEX 01 28:02:00
   TRACK 09 AUDIO
-    TITLE "Visions"
-    PERFORMER "MYRNE, Julian Gray & Elliot Vast"
-    INDEX 01 32:10:00
+    TITLE "Mahuru"
+    PERFORMER "08. Maywave"
+    INDEX 01 32:57:00
   TRACK 10 AUDIO
-    TITLE "Waves"
-    PERFORMER "Huminal"
-    INDEX 01 36:20:00
+    TITLE "Blinded By The Lights"
+    PERFORMER "09. Kryder & Cammie Robinson"
+    INDEX 01 36:57:00
   TRACK 11 AUDIO
-    TITLE "Silver On My Skin"
-    PERFORMER "YORK x Glenn Morrison x Skye Silansky"
-    INDEX 01 40:55:00
+    TITLE "Fight It"
+    PERFORMER "10. CRi"
+    INDEX 01 41:52:00
   TRACK 12 AUDIO
-    TITLE "Amsterdam (Above & Beyond’s Downtempo Edit)"
-    PERFORMER "Luminary"
-    INDEX 01 44:55:00
+    TITLE "Know"
+    PERFORMER "11. Paul Ursin"
+    INDEX 01 46:27:00
   TRACK 13 AUDIO
-    TITLE "ID"
-    PERFORMER "ID"
-    INDEX 01 48:59:00
+    TITLE "Golden Hour"
+    PERFORMER "12. Foglight"
+    INDEX 01 50:31:00
   TRACK 14 AUDIO
-    TITLE "ID"
-    PERFORMER "ID"
-    INDEX 01 54:08:00
+    TITLE "No Captain (Jeremy Olander & OLING Remix)"
+    PERFORMER "13. Lane 8 & Jeremy Olander & OLING"
+    INDEX 01 53:39:00
   TRACK 15 AUDIO
-    TITLE "Start Again"
-    PERFORMER "Sultan + Shepard"
-    INDEX 01 59:04:00
+    TITLE "Do This Right Now"
+    PERFORMER "14. AVNT"
+    INDEX 01 58:23:00
   TRACK 16 AUDIO
-    TITLE "Chemical"
-    PERFORMER "Marten Lou & Ross Quinn"
-    INDEX 01 64:16:00
+    TITLE "Stop The Rock"
+    PERFORMER "15. Orkidea"
+    INDEX 01 62:49:00
   TRACK 17 AUDIO
-    TITLE "Kaleido"
-    PERFORMER "Arodes"
-    INDEX 01 69:26:00
+    TITLE "Space Keeper"
+    PERFORMER "16. Eelke Kleijn & Eleonora"
+    INDEX 01 67:48:00
   TRACK 18 AUDIO
-    TITLE "Reverie"
-    PERFORMER "Pete K"
-    INDEX 01 73:53:00
+    TITLE "KAIO"
+    PERFORMER "17. John Grand"
+    INDEX 01 71:34:00
   TRACK 19 AUDIO
-    TITLE "Flowstate"
-    PERFORMER "LÜRUM"
-    INDEX 01 78:32:00
+    TITLE "We Were Shadows"
+    PERFORMER "18. Darren Tate"
+    INDEX 01 75:07:00
   TRACK 20 AUDIO
-    TITLE "Bringer"
-    PERFORMER "Sébastian Léger & Khen"
-    INDEX 01 82:55:00
+    TITLE "Hi-Tech"
+    PERFORMER "19. station2station"
+    INDEX 01 79:39:00
   TRACK 21 AUDIO
-    TITLE "Love Will Find The Moment"
-    PERFORMER "Glowal"
-    INDEX 01 88:42:00
+    TITLE "Ten Minutes To Midnight"
+    PERFORMER "20. Jer Martin"
+    INDEX 01 84:09:00
   TRACK 22 AUDIO
-    TITLE "ID"
-    PERFORMER "ENNEA"
-    INDEX 01 93:36:00
+    TITLE "House Of Hades"
+    PERFORMER "21. CLOSE PROXIMITY"
+    INDEX 01 89:57:00
   TRACK 23 AUDIO
-    TITLE "Fix This Beat"
-    PERFORMER "SQU4RE"
-    INDEX 01 97:40:00
+    TITLE "Endless Spirit"
+    PERFORMER "22. CLOSE PROXIMITY"
+    INDEX 01 96:12:00
   TRACK 24 AUDIO
-    TITLE "ID"
-    PERFORMER "SQU4RE"
-    INDEX 01 102:00:00
+    TITLE "Every Body"
+    PERFORMER "23. CLOSE PROXIMITY"
+    INDEX 01 102:53:00
   TRACK 25 AUDIO
-    TITLE "ID"
-    PERFORMER "SQU4RE"
-    INDEX 01 105:48:00
+    TITLE "Fiji (CLOSE PROXIMITY Remix)"
+    PERFORMER "24. Atlantis vs. Avatar ft. Miriam Stockley"
+    INDEX 01 108:42:00
   TRACK 26 AUDIO
-    TITLE "ID"
-    PERFORMER "station2station X SQU4RE"
-    INDEX 01 110:53:00
-  TRACK 27 AUDIO
-    TITLE "Redemption"
-    PERFORMER "J Ribbon"
-    INDEX 01 116:23:00
+    TITLE "The Future"
+    PERFORMER "25. CLOSE PROXIMITY"
+    INDEX 01 114:51:00
